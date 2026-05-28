@@ -128,10 +128,37 @@ export default function HomeSPA() {
   // Estado Especial de Impresión
   const [printingTratamiento, setPrintingTratamiento] = useState<TreatmentSession | null>(null);
 
+  // Consultas de Hoy dinámicas de Supabase
+  const [consultasHoy, setConsultasHoy] = useState<any[]>([]);
+
   // =========================================================================
   // OPERACIONES CON SUPABASE (CONEXIÓN REAL A LA BASE DE DATOS)
   // =========================================================================
   const supabase = createClient();
+
+  // 1.1 Obtener consultas/sesiones hoy dinámicas de Supabase
+  const fetchConsultasHoy = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tratamientos_paciente")
+        .select(`
+          id,
+          fecha,
+          total_costo,
+          paciente:pacientes(nombre_completo, motivo_consulta)
+        `)
+        .order("fecha", { ascending: false })
+        .limit(3);
+
+      if (!error && data) {
+        setConsultasHoy(data);
+      } else {
+        console.warn("Error al cargar consultas hoy de Supabase:", error);
+      }
+    } catch (e) {
+      console.warn("Fallo de red al conectar con Supabase para consultas:", e);
+    }
+  };
 
   // 1. Obtener listado de pacientes desde Supabase
   const fetchPacientes = async () => {
@@ -155,7 +182,7 @@ export default function HomeSPA() {
 
   // Cargar de LocalStorage si Supabase no está configurada aún o falla
   const loadLocalPacientesFallback = () => {
-    const saved = localStorage.getItem("clinident_pacientes");
+    const saved = localStorage.getItem("clinica_dental_zuniga_pacientes");
     if (saved) {
       setPacientes(JSON.parse(saved));
     } else {
@@ -246,7 +273,7 @@ export default function HomeSPA() {
   };
 
   const loadLocalTratamientosFallback = (pacienteId: string) => {
-    const saved = localStorage.getItem(`clinident_tratamientos_${pacienteId}`);
+    const saved = localStorage.getItem(`clinica_dental_zuniga_tratamientos_${pacienteId}`);
     if (saved) {
       setTratamientos(JSON.parse(saved));
     } else {
@@ -258,6 +285,7 @@ export default function HomeSPA() {
   useEffect(() => {
     fetchPacientes();
     fetchCatalogo();
+    fetchConsultasHoy();
   }, []);
 
   // Cargar tratamientos y sincronizar odontograma activo al cambiar el paciente seleccionado
@@ -266,7 +294,7 @@ export default function HomeSPA() {
       fetchTratamientos(selectedPacienteId);
 
       // Cargar el último odontograma guardado del paciente para que esté siempre activo y visible
-      const ultimo = localStorage.getItem(`clinident_ultimo_odontograma_${selectedPacienteId}`);
+      const ultimo = localStorage.getItem(`clinica_dental_zuniga_ultimo_odontograma_${selectedPacienteId}`);
       setNuevoOdontograma(ultimo ? JSON.parse(ultimo) : {});
 
       setSelectedTratamientoDetalle(null);
@@ -276,7 +304,7 @@ export default function HomeSPA() {
 
   // Sincronizar copias locales de historias en localStorage para robustez
   const syncLocalPacientes = (listado: PacienteData[]) => {
-    localStorage.setItem("clinident_pacientes", JSON.stringify(listado));
+    localStorage.setItem("clinica_dental_zuniga_pacientes", JSON.stringify(listado));
   };
 
   // 4. Crear nuevo paciente (incluyendo su odontograma inicial)
@@ -291,7 +319,7 @@ export default function HomeSPA() {
       if (!error && newPatient) {
         // Si el doctor mapeó un odontograma inicial de registro, guardamos esa sesión
         if (Object.keys(registroOdontograma).length > 0) {
-          localStorage.setItem(`clinident_ultimo_odontograma_${newPatient.id}`, JSON.stringify(registroOdontograma));
+          localStorage.setItem(`clinica_dental_zuniga_ultimo_odontograma_${newPatient.id}`, JSON.stringify(registroOdontograma));
           
           // Crear primer tratamiento de registro
           await supabase
@@ -305,6 +333,7 @@ export default function HomeSPA() {
         }
 
         await fetchPacientes();
+        await fetchConsultasHoy();
         setSelectedPacienteId(newPatient.id);
         setActiveTab("expediente");
       } else {
@@ -331,7 +360,7 @@ export default function HomeSPA() {
     syncLocalPacientes(nuevoListado);
 
     if (Object.keys(registroOdontograma).length > 0) {
-      localStorage.setItem(`clinident_ultimo_odontograma_${nuevoPaciente.id!}`, JSON.stringify(registroOdontograma));
+      localStorage.setItem(`clinica_dental_zuniga_ultimo_odontograma_${nuevoPaciente.id!}`, JSON.stringify(registroOdontograma));
     }
 
     setSelectedPacienteId(nuevoPaciente.id!);
@@ -393,8 +422,8 @@ export default function HomeSPA() {
     const nuevoListado = pacientes.filter((p) => p.id !== id);
     setPacientes(nuevoListado);
     syncLocalPacientes(nuevoListado);
-    localStorage.removeItem(`clinident_tratamientos_${id}`);
-    localStorage.removeItem(`clinident_ultimo_odontograma_${id}`);
+    localStorage.removeItem(`clinica_dental_zuniga_tratamientos_${id}`);
+    localStorage.removeItem(`clinica_dental_zuniga_ultimo_odontograma_${id}`);
     if (selectedPacienteId === id) {
       setSelectedPacienteId(null);
       setActiveTab("pacientes");
@@ -445,7 +474,8 @@ export default function HomeSPA() {
 
         // C. Actualizar y refrescar historial
         await fetchTratamientos(selectedPacienteId);
-        localStorage.setItem(`clinident_ultimo_odontograma_${selectedPacienteId}`, JSON.stringify(nuevoOdontograma));
+        localStorage.setItem(`clinica_dental_zuniga_ultimo_odontograma_${selectedPacienteId}`, JSON.stringify(nuevoOdontograma));
+        await fetchConsultasHoy();
         alert("¡Ficha dental guardada con éxito en la base de datos de Supabase!");
       } else {
         console.warn("Fallo al registrar tratamiento en Supabase, recurriendo a offline fallback:", error);
@@ -475,8 +505,8 @@ export default function HomeSPA() {
 
     const nuevosTratamientos = [nuevaSesion, ...tratamientos];
     setTratamientos(nuevosTratamientos);
-    localStorage.setItem(`clinident_tratamientos_${selectedPacienteId}`, JSON.stringify(nuevosTratamientos));
-    localStorage.setItem(`clinident_ultimo_odontograma_${selectedPacienteId}`, JSON.stringify(nuevoOdontograma));
+    localStorage.setItem(`clinica_dental_zuniga_tratamientos_${selectedPacienteId}`, JSON.stringify(nuevosTratamientos));
+    localStorage.setItem(`clinica_dental_zuniga_ultimo_odontograma_${selectedPacienteId}`, JSON.stringify(nuevoOdontograma));
     alert("¡Sesión clínica guardada localmente (Modo Offline)!");
   };
 
@@ -507,7 +537,7 @@ export default function HomeSPA() {
   const deleteTreatmentLocalFallback = (trId: string) => {
     const filtrados = tratamientos.filter((t) => t.id !== trId);
     setTratamientos(filtrados);
-    localStorage.setItem(`clinident_tratamientos_${selectedPacienteId}`, JSON.stringify(filtrados));
+    localStorage.setItem(`clinica_dental_zuniga_tratamientos_${selectedPacienteId}`, JSON.stringify(filtrados));
     if (selectedTratamientoDetalle?.id === trId) {
       setSelectedTratamientoDetalle(null);
     }
@@ -713,7 +743,7 @@ export default function HomeSPA() {
       <aside className={`fixed inset-y-0 left-0 w-64 border-r p-6 flex flex-col justify-between z-20 transition-colors duration-250 ${
         isDarkMode 
           ? "bg-slate-900 border-slate-800 text-slate-300" 
-          : "bg-teal-900 border-teal-955 text-teal-100"
+          : "bg-teal-900 border-teal-800 text-teal-100"
       }`}>
         <div className="space-y-8">
           
@@ -728,7 +758,7 @@ export default function HomeSPA() {
                 <Stethoscope className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="font-extrabold text-white text-md tracking-tight leading-none">Clinident</h1>
+                <h1 className="font-extrabold text-white text-sm tracking-tight leading-none">C.D. Zúñiga</h1>
                 <span className={`text-[9px] font-bold uppercase tracking-widest block mt-0.5 ${isDarkMode ? "text-slate-500" : "text-teal-350"}`}>Ficha Clínica</span>
               </div>
             </div>
@@ -760,10 +790,10 @@ export default function HomeSPA() {
                 activeTab === "inicio"
                   ? isDarkMode 
                     ? "bg-emerald-600 text-white shadow-lg" 
-                    : "bg-yellow-400 text-teal-955 shadow-md font-black hover:bg-yellow-350"
+                    : "bg-teal-750 text-white shadow-md font-bold hover:bg-teal-600"
                   : isDarkMode
                     ? "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
-                    : "text-teal-200 hover:bg-teal-850/80 hover:text-white"
+                    : "text-white hover:bg-teal-850/80 hover:text-white"
               }`}
             >
               <Home className="h-4.5 w-4.5" /> Panel Principal
@@ -775,10 +805,10 @@ export default function HomeSPA() {
                 activeTab === "pacientes"
                   ? isDarkMode 
                     ? "bg-emerald-600 text-white shadow-lg" 
-                    : "bg-yellow-400 text-teal-955 shadow-md font-black hover:bg-yellow-350"
+                    : "bg-teal-750 text-white shadow-md font-bold hover:bg-teal-600"
                   : isDarkMode
                     ? "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
-                    : "text-teal-200 hover:bg-teal-850/80 hover:text-white"
+                    : "text-white hover:bg-teal-850/80 hover:text-white"
               }`}
             >
               <Users className="h-4.5 w-4.5" /> Historias Clínicas
@@ -791,13 +821,13 @@ export default function HomeSPA() {
                   activeTab === "expediente"
                     ? isDarkMode 
                       ? "bg-emerald-600 text-white shadow-lg" 
-                      : "bg-yellow-400 text-teal-955 shadow-md font-black hover:bg-yellow-350"
+                      : "bg-teal-750 text-white shadow-md font-bold hover:bg-teal-600"
                     : isDarkMode
                       ? "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
-                      : "text-teal-200 hover:bg-teal-850/80 hover:text-white"
+                      : "text-white hover:bg-teal-850/80 hover:text-white"
                 }`}
               >
-                <Activity className={`h-4.5 w-4.5 animate-pulse ${isDarkMode ? "text-emerald-400" : "text-teal-950"}`} /> Ficha: {selectedPaciente.nombre_completo.split(" ")[0]}
+                <Activity className={`h-4.5 w-4.5 animate-pulse ${isDarkMode ? "text-emerald-400" : "text-white"}`} /> Ficha: {selectedPaciente.nombre_completo.split(" ")[0]}
               </button>
             )}
           </nav>
@@ -845,7 +875,7 @@ export default function HomeSPA() {
               <div className={`p-8 rounded-3xl border shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden transition-all duration-250 ${
                 isDarkMode 
                   ? "bg-slate-900 border-slate-800 text-slate-100" 
-                  : "bg-gradient-to-r from-teal-900 via-teal-850 to-emerald-950 border-teal-955 text-white shadow-2xl"
+                  : "bg-gradient-to-r from-teal-900 via-teal-800 to-emerald-900 border-teal-800 text-white shadow-2xl"
               }`}>
                 <div className="space-y-2 z-10">
                   <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
@@ -866,7 +896,7 @@ export default function HomeSPA() {
                   className={`flex items-center justify-center gap-2 text-xs font-bold px-5 py-3 rounded-xl shadow-lg transition-all hover:scale-[1.03] cursor-pointer ${
                     isDarkMode 
                       ? "bg-emerald-600 hover:bg-emerald-500 text-white" 
-                      : "bg-yellow-400 hover:bg-yellow-350 text-teal-955 font-black shadow-yellow-400/20"
+                      : "bg-yellow-400 hover:bg-yellow-350 text-teal-950 font-black shadow-yellow-400/20"
                   }`}
                 >
                   <PlusCircle className="h-4.5 w-4.5" /> Registrar Historia Clínica
@@ -915,23 +945,27 @@ export default function HomeSPA() {
                     </span>
                   </div>
                   <div className="divide-y divide-slate-200 dark:divide-slate-850">
-                    {pacientes.length === 0 ? (
-                      <div className="py-8 text-center text-xs text-slate-450">No hay consultas registradas en Supabase aún.</div>
+                    {consultasHoy.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-slate-450">No hay consultas o sesiones registradas hoy en Supabase.</div>
                     ) : (
-                      pacientes.slice(0, 2).map((cita, i) => (
-                        <div key={i} className={`py-4 flex justify-between items-center rounded-xl px-2 transition-colors ${
+                      consultasHoy.map((cita) => (
+                        <div key={cita.id} className={`py-4 flex justify-between items-center rounded-xl px-2 transition-colors ${
                           isDarkMode ? "hover:bg-slate-850/30" : "hover:bg-slate-50/50"
                         }`}>
                           <div className="flex gap-4 items-center">
                             <span className={`text-xs font-black px-2.5 py-1.5 rounded-lg border text-center min-w-[75px] ${
-                              isDarkMode ? "text-emerald-400 bg-emerald-500/5 border-emerald-500/10" : "text-teal-750 bg-teal-500/5 border-teal-500/10"
-                            }`}>{i === 0 ? "09:00 AM" : "11:30 AM"}</span>
+                              isDarkMode ? "text-emerald-400 bg-emerald-500/5 border-emerald-500/10" : "text-teal-600 bg-teal-500/5 border-teal-500/10"
+                            }`}>
+                              {new Date(cita.fecha).toLocaleTimeString("es-ES", {hour: '2-digit', minute:'2-digit'})}
+                            </span>
                             <div>
-                              <p className={`text-sm font-bold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{cita.nombre_completo}</p>
-                              <p className="text-xs text-slate-550 truncate max-w-[320px]">{cita.motivo_consulta}</p>
+                              <p className={`text-sm font-bold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{cita.paciente?.nombre_completo}</p>
+                              <p className="text-xs text-slate-500 truncate max-w-[320px]">{cita.paciente?.motivo_consulta || "Tratamiento Odontológico"}</p>
                             </div>
                           </div>
-                          <span className={`text-[9px] font-bold px-2 py-1 rounded-full border ${isDarkMode ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-teal-50 text-teal-700 border-teal-100"}`}>{i === 0 ? "Tratamiento":"Limpieza"}</span>
+                          <span className={`text-[9px] font-bold px-2 py-1 rounded-full border ${isDarkMode ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-50 text-yellow-700 border-yellow-100 font-bold"}`}>
+                            s/. {Number(cita.total_costo).toFixed(0)}
+                          </span>
                         </div>
                       ))
                     )}
@@ -997,7 +1031,7 @@ export default function HomeSPA() {
                       <p className="text-xs text-slate-500">Completa la historia clínica de filiación y dibuja el odontograma diagnóstico de ingreso</p>
                     </div>
                     <button onClick={() => { setIsRegisteringNewPaciente(false); setRegistroOdontograma({}); }} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      isDarkMode ? "bg-slate-800 text-slate-350 hover:bg-slate-700" : "bg-slate-100 text-slate-650 hover:bg-slate-200"
+                      isDarkMode ? "bg-slate-800 text-slate-350 hover:bg-slate-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}>Cancelar</button>
                   </div>
                   
@@ -1044,7 +1078,7 @@ export default function HomeSPA() {
                       className={`flex items-center justify-center gap-2 text-xs font-bold px-5 py-3 rounded-xl shadow-lg transition-all hover:scale-[1.02] w-full sm:w-auto cursor-pointer ${
                         isDarkMode 
                           ? "bg-emerald-600 hover:bg-emerald-500 text-white" 
-                          : "bg-yellow-400 hover:bg-yellow-350 text-teal-955 font-black shadow-yellow-400/20"
+                          : "bg-yellow-400 hover:bg-yellow-350 text-teal-950 font-black shadow-yellow-400/20"
                       }`}
                     >
                       <PlusCircle className="h-4.5 w-4.5" /> Registrar Historia Clínica
@@ -1158,7 +1192,7 @@ export default function HomeSPA() {
                     className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl border transition-all ${
                       isDarkMode 
                         ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700" 
-                        : "bg-white border-slate-200 text-slate-650 hover:bg-slate-100"
+                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
                     <ArrowLeft className="h-4 w-4" /> Volver a Lista
@@ -1259,7 +1293,7 @@ export default function HomeSPA() {
                               selectedTratamientoDetalle?.id === tr.id
                                 ? "bg-emerald-500/5 border-emerald-500"
                                 : isDarkMode 
-                                  ? "bg-slate-955 border-slate-850 hover:bg-slate-900" 
+                                  ? "bg-slate-900 border-slate-850 hover:bg-slate-900" 
                                   : "bg-slate-50 border-slate-200 hover:bg-slate-100/50"
                             }`}
                           >
@@ -1417,7 +1451,7 @@ export default function HomeSPA() {
                         onSubmit={handleSaveTreatment} 
                         onCancel={() => {
                           if (window.confirm("¿Seguro que deseas reiniciar los cambios del odontograma activo?")) {
-                            const ultimo = localStorage.getItem(`clinident_ultimo_odontograma_${selectedPacienteId}`);
+                            const ultimo = localStorage.getItem(`clinica_dental_zuniga_ultimo_odontograma_${selectedPacienteId}`);
                             setNuevoOdontograma(ultimo ? JSON.parse(ultimo) : {});
                           }
                         }} 

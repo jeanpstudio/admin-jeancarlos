@@ -624,7 +624,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                     onClick={toggleDienteCorona}
                     className={`flex items-center justify-center gap-2 p-3 rounded-xl border font-black text-sm transition-all cursor-pointer ${
                       dienteSeleccionado.corona
-                        ? "bg-yellow-400 border-yellow-500 text-teal-955 shadow-md shadow-yellow-400/25"
+                        ? "bg-yellow-400 border-yellow-500 text-teal-950 shadow-md shadow-yellow-400/25"
                         : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                   >

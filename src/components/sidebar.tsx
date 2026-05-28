@@ -32,7 +32,7 @@ export const Sidebar: React.FC = () => {
             <Stethoscope className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="font-extrabold text-white text-md tracking-tight leading-none">Clinident</h1>
+            <h1 className="font-extrabold text-white text-md tracking-tight leading-none">Clínica Dental Zúñiga</h1>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Admin Dashboard</span>
           </div>
         </div>
