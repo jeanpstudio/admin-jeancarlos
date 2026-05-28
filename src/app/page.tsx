@@ -87,7 +87,7 @@ const DienteImpresion: React.FC<DienteImpresionProps> = ({ diente }) => {
           <span className={`w-2 h-2 border border-slate-200 ${getFaceBg(diente.caras.O)}`}></span>
         </div>
       ) : (
-        <div className="relative w-5 h-5 flex items-center justify-center font-black text-red-650 text-[10px] leading-none">X</div>
+        <div className="relative w-5 h-5 flex items-center justify-center font-black text-red-600 text-[10px] leading-none">X</div>
       )}
       <div className="flex gap-0.5 text-[6px] font-bold leading-none mt-0.5">
         {diente.ausente && <span className="text-red-500 font-bold">A</span>}
@@ -550,7 +550,7 @@ export default function HomeSPA() {
         <div className="print:hidden flex justify-between items-center bg-slate-50 border border-slate-200 p-4 rounded-2xl mb-8">
           <button
             onClick={() => setPrintingTratamiento(null)}
-            className="flex items-center gap-1 text-xs font-bold text-slate-650 hover:text-slate-900 transition-colors uppercase"
+            className="flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors uppercase"
           >
             <ArrowLeft className="h-4 w-4" /> Volver al Dashboard
           </button>
@@ -608,9 +608,9 @@ export default function HomeSPA() {
           </h3>
           <div className="flex gap-4 text-[9px] font-bold justify-center border-b border-slate-100 pb-2">
             <div className="flex items-center gap-1"><span className="w-3.5 h-3.5 rounded border border-slate-400 bg-white"></span> Limpio</div>
-            <div className="flex items-center gap-1 text-red-650"><span className="w-3.5 h-3.5 rounded border border-red-700 bg-red-500"></span> Caries</div>
-            <div className="flex items-center gap-1 text-blue-650"><span className="w-3.5 h-3.5 rounded border border-blue-600 bg-blue-400"></span> Curado</div>
-            <div className="flex items-center gap-1 text-red-500"><span className="w-3.5 h-3.5 rounded border border-red-200 bg-red-50 flex items-center justify-center font-bold text-[8px]">X</span> Ausente</div>
+            <div className="flex items-center gap-1 text-red-600"><span className="w-3.5 h-3.5 rounded border border-red-700 bg-red-500"></span> Caries</div>
+            <div className="flex items-center gap-1 text-blue-600"><span className="w-3.5 h-3.5 rounded border border-blue-600 bg-blue-400"></span> Curado</div>
+            <div className="flex items-center gap-1 text-red-550"><span className="w-3.5 h-3.5 rounded border border-red-200 bg-red-50 flex items-center justify-center font-bold text-[8px]">X</span> Ausente</div>
           </div>
           <div className="space-y-4">
             <div className="space-y-1">
@@ -1103,8 +1103,8 @@ export default function HomeSPA() {
                               )}
                             </div>
                             <div className="space-y-1.5 text-[10px] border-t pt-3 border-slate-200/60 dark:border-slate-850">
-                              <div className="flex items-start gap-1"><span className="font-bold text-slate-500 min-w-[50px]">Motivo:</span><p className={`font-medium truncate ${isDarkMode ? "text-slate-350":"text-slate-650"}`}>{p.motivo_consulta}</p></div>
-                              {p.alergias && <div className="flex items-start gap-1"><span className="font-bold text-red-500 min-w-[50px]">Alergias:</span><p className="text-red-650 dark:text-red-400 font-bold truncate">{p.alergias}</p></div>}
+                              <div className="flex items-start gap-1"><span className="font-bold text-slate-500 min-w-[50px]">Motivo:</span><p className={`font-medium truncate ${isDarkMode ? "text-slate-350":"text-slate-600"}`}>{p.motivo_consulta}</p></div>
+                              {p.alergias && <div className="flex items-start gap-1"><span className="font-bold text-red-500 min-w-[50px]">Alergias:</span><p className="text-red-600 dark:text-red-400 font-bold truncate">{p.alergias}</p></div>}
                             </div>
                           </div>
                           <div className="flex justify-between items-center border-t pt-3 mt-4 border-slate-200/60 dark:border-slate-850">
@@ -1223,10 +1223,10 @@ export default function HomeSPA() {
                           </div>
                           
                           <div className="pt-4 border-t border-slate-200/60 dark:border-slate-850 space-y-3.5">
-                            <div><span className="text-[10px] text-slate-450 block font-bold">Motivo de Consulta:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-355":"text-slate-650"}`}>{selectedPaciente.motivo_consulta}</p></div>
-                            <div><span className="text-[10px] text-slate-450 block font-bold">Hemorragias / Sangrado:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-300" : "text-slate-650"}`}>{selectedPaciente.hemorragias || "Ninguna."}</p></div>
-                            <div><span className="text-[10px] text-slate-450 block font-bold">Enfermedades Sistémicas:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-300" : "text-slate-650"}`}>{selectedPaciente.enfermedades || "Ninguna."}</p></div>
-                            <div><span className="text-[10px] text-slate-450 block font-bold">Medicamentos Actuales:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-300" : "text-slate-650"}`}>{selectedPaciente.medicamentos_actuales || "Ninguno."}</p></div>
+                            <div><span className="text-[10px] text-slate-450 block font-bold">Motivo de Consulta:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-355":"text-slate-600"}`}>{selectedPaciente.motivo_consulta}</p></div>
+                            <div><span className="text-[10px] text-slate-450 block font-bold">Hemorragias / Sangrado:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{selectedPaciente.hemorragias || "Ninguna."}</p></div>
+                            <div><span className="text-[10px] text-slate-450 block font-bold">Enfermedades Sistémicas:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{selectedPaciente.enfermedades || "Ninguna."}</p></div>
+                            <div><span className="text-[10px] text-slate-450 block font-bold">Medicamentos Actuales:</span><p className={`font-medium leading-snug mt-0.5 ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{selectedPaciente.medicamentos_actuales || "Ninguno."}</p></div>
                           </div>
                         </div>
                       </div>
@@ -1264,7 +1264,7 @@ export default function HomeSPA() {
                             }`}
                           >
                             <div className="space-y-0.5 overflow-hidden">
-                              <span className="text-[10px] font-black text-teal-650 dark:text-teal-400">{new Date(tr.fecha).toLocaleDateString("es-ES")}</span>
+                              <span className="text-[10px] font-black text-teal-600 dark:text-teal-400">{new Date(tr.fecha).toLocaleDateString("es-ES")}</span>
                               <p className={`text-[9px] font-bold truncate max-w-[120px] ${isDarkMode ? "text-slate-400":"text-slate-550"}`}>{tr.procedimientos.map((p: any)=>p.nombre_procedimiento).join(", ")}</p>
                             </div>
                             <div className="flex gap-2 items-center">

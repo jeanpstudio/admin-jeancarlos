@@ -317,7 +317,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
               {/* SALDO PENDIENTE */}
               <div className="bg-gradient-to-br from-yellow-50/70 to-yellow-100/30 dark:from-yellow-950/10 dark:to-yellow-900/5 p-5 rounded-2xl border border-yellow-100 dark:border-yellow-900/30 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-bold text-yellow-650 dark:text-yellow-450 uppercase tracking-widest">Saldo Pendiente (Deuda)</span>
+                  <span className="text-xs font-bold text-yellow-600 dark:text-yellow-450 uppercase tracking-widest">Saldo Pendiente (Deuda)</span>
                   <p className={`text-[28px] font-black mt-1 flex items-baseline gap-1 ${
                     saldo > 0 ? "text-yellow-600 dark:text-yellow-450" : "text-emerald-600 dark:text-emerald-400"
                   }`}>
@@ -325,7 +325,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
                     {saldo.toFixed(2)}
                   </p>
                 </div>
-                <div className="text-[10px] mt-2 font-medium flex items-center gap-1 text-yellow-750 dark:text-yellow-450">
+                <div className="text-[10px] mt-2 font-medium flex items-center gap-1 text-yellow-700 dark:text-yellow-450">
                   {saldo > 0 ? (
                     <>
                       <AlertCircle className="h-3 w-3" />
@@ -360,7 +360,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
           type="button"
           onClick={handleGuardarPresupuesto}
           disabled={selectedProcedures.length === 0}
-          className="px-8 py-3 bg-teal-650 disabled:bg-slate-200 disabled:dark:bg-slate-850 disabled:text-slate-400 hover:bg-teal-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-teal-500/10 hover:shadow-teal-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+          className="px-8 py-3 bg-teal-600 disabled:bg-slate-200 disabled:dark:bg-slate-850 disabled:text-slate-400 hover:bg-teal-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-teal-500/10 hover:shadow-teal-500/20 transition-all hover:scale-[1.02] cursor-pointer"
         >
           Guardar Tratamiento y Costos
         </button>

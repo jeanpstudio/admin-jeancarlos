@@ -39,7 +39,7 @@ export const Sidebar: React.FC = () => {
 
         {/* NAVEGACIÓN */}
         <nav className="space-y-1">
-          <span className="px-3 text-[10px] font-bold text-slate-650 uppercase tracking-wider block mb-3">Menú de Navegación</span>
+          <span className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-3">Menú de Navegación</span>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");

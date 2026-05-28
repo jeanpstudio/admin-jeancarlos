@@ -89,9 +89,9 @@ const DienteSVG: React.FC<DienteSVGProps> = ({
   const getFaceColor = (estado: FaceState) => {
     switch (estado) {
       case "caries":
-        return "fill-red-500 hover:fill-red-650 stroke-red-700";
+        return "fill-red-500 hover:fill-red-600 stroke-red-700";
       case "curado":
-        return "fill-blue-500 hover:fill-blue-650 stroke-blue-700";
+        return "fill-blue-500 hover:fill-blue-600 stroke-blue-700";
       default:
         return "fill-white dark:fill-slate-900 hover:fill-slate-100 dark:hover:fill-slate-800 stroke-slate-200 dark:stroke-slate-800";
     }
@@ -394,7 +394,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-850 dark:text-slate-100 flex items-center gap-2">
-            <Activity className="h-6 w-6 text-teal-650 dark:text-emerald-450" />
+            <Activity className="h-6 w-6 text-teal-600 dark:text-emerald-455" />
             Odontograma Clínico Interactivo
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -410,7 +410,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
               onClick={() => setVista("todos")}
               className={`px-3 py-1.5 rounded-full transition-all ${
                 vista === "todos" 
-                  ? "bg-white dark:bg-slate-900 text-teal-650 dark:text-emerald-400 shadow-sm font-bold" 
+                  ? "bg-white dark:bg-slate-900 text-teal-600 dark:text-emerald-400 shadow-sm font-bold" 
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-800"
               }`}
             >
@@ -420,7 +420,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
               onClick={() => setVista("adulto")}
               className={`px-3 py-1.5 rounded-full transition-all ${
                 vista === "adulto" 
-                  ? "bg-white dark:bg-slate-900 text-teal-650 dark:text-emerald-400 shadow-sm font-bold" 
+                  ? "bg-white dark:bg-slate-900 text-teal-600 dark:text-emerald-400 shadow-sm font-bold" 
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-800"
               }`}
             >
@@ -430,7 +430,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
               onClick={() => setVista("infantil")}
               className={`px-3 py-1.5 rounded-full transition-all ${
                 vista === "infantil" 
-                  ? "bg-white dark:bg-slate-900 text-teal-650 dark:text-emerald-400 shadow-sm font-bold" 
+                  ? "bg-white dark:bg-slate-900 text-teal-600 dark:text-emerald-400 shadow-sm font-bold" 
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-800"
               }`}
             >
@@ -612,7 +612,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                     onClick={toggleDienteAusente}
                     className={`flex items-center justify-center gap-2 p-3 rounded-xl border font-semibold text-sm transition-all cursor-pointer ${
                       dienteSeleccionado.ausente
-                        ? "bg-red-500 border-red-650 text-white shadow-md shadow-red-500/20"
+                        ? "bg-red-500 border-red-600 text-white shadow-md shadow-red-500/20"
                         : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                   >
@@ -636,7 +636,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                     onClick={toggleDienteEndodoncia}
                     className={`flex items-center justify-center gap-2 p-3 rounded-xl border font-semibold text-sm transition-all cursor-pointer ${
                       dienteSeleccionado.endodoncia
-                        ? "bg-purple-650 border-purple-700 text-white shadow-md shadow-purple-650/20"
+                        ? "bg-purple-600 border-purple-700 text-white shadow-md shadow-purple-600/20"
                         : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                   >

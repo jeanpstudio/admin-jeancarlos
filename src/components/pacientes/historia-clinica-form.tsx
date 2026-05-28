@@ -225,7 +225,7 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
         {/* Motivo de Consulta */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5 text-teal-650 dark:text-teal-400" />
+            <FileText className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
             Motivo de Consulta Principal *
           </label>
           <textarea
@@ -319,7 +319,7 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
         )}
         <button
           type="submit"
-          className="px-8 py-3 bg-teal-650 hover:bg-teal-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-teal-500/10 hover:shadow-teal-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+          className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-teal-500/10 hover:shadow-teal-500/20 transition-all hover:scale-[1.02] cursor-pointer"
         >
           Guardar Historia Clínica
         </button>
