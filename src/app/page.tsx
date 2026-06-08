@@ -1839,13 +1839,39 @@ export default function HomeSPA() {
 
                       {(() => {
                         // Obtener todas las sesiones de todos los tratamientos del paciente actual
-                        const todasLasSesiones = tratamientos.flatMap((tr) => 
-                          (tr.sesiones || []).map((ses) => ({
-                            ...ses,
-                            tratamientoFecha: tr.fecha,
-                            tratamientoId: tr.id
-                          }))
-                        ).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+                        const todasLasSesiones = tratamientos.flatMap((tr) => {
+                          const result = [];
+                          
+                          // Para planes antiguos o registros únicos que no tienen array de 'sesiones' pero sí procedimientos
+                          if ((!tr.sesiones || tr.sesiones.length === 0) && tr.procedimientos && tr.procedimientos.length > 0) {
+                            const piezasSet = new Set<string>();
+                            tr.procedimientos.forEach(p => {
+                              if (p.piezas) p.piezas.split(",").map(x => x.trim()).filter(x => x).forEach(x => piezasSet.add(x));
+                            });
+                            
+                            result.push({
+                              fecha: tr.fecha,
+                              doctor: "Jean Carlos Zúñiga",
+                              procedimientosTratados: tr.procedimientos.map(p => p.nombre_procedimiento),
+                              piezasTratadas: Array.from(piezasSet),
+                              nota: tr.procedimientos.map(p => p.notas).filter(n => n).join(" | ") || "Registro inicial de Tratamiento / Procedimientos",
+                              pago: tr.adelanto,
+                              tratamientoFecha: tr.fecha,
+                              tratamientoId: tr.id
+                            });
+                          }
+                          
+                          // Agregar las sesiones reales registradas
+                          if (tr.sesiones && tr.sesiones.length > 0) {
+                            result.push(...tr.sesiones.map((ses) => ({
+                              ...ses,
+                              tratamientoFecha: tr.fecha,
+                              tratamientoId: tr.id
+                            })));
+                          }
+                          
+                          return result;
+                        }).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 
                         if (todasLasSesiones.length === 0) {
                           return (
