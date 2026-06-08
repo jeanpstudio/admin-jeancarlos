@@ -734,8 +734,7 @@ export default function HomeSPA() {
         .from("tratamientos_paciente")
         .update({ 
           sesiones: nuevasSesiones,
-          adelanto: nuevoAdelanto,
-          saldo: nuevoSaldo
+          adelanto: nuevoAdelanto
         })
         .eq("id", trId);
 
@@ -1943,8 +1942,8 @@ export default function HomeSPA() {
                 {/* SUB-TAB 3: PRESUPUESTO & PLAN DE TRATAMIENTO */}
                 {activeSubTab === "presupuesto" && (
                   <>
-                    {/* Odontograma interactivo para marcar piezas */}
-                    <div className="lg:col-span-12 space-y-4">
+                    {/* Botones de selección de plan */}
+                    <div className="lg:col-span-12 space-y-4 mb-4">
                       <div className="flex border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden text-xs font-bold bg-slate-100 dark:bg-slate-900 w-max self-center">
                         <button
                           onClick={() => setSelectedTratamientoDetalle(null)}
@@ -1962,40 +1961,9 @@ export default function HomeSPA() {
                           </button>
                         ))}
                       </div>
-
-                      {/* Odontograma interactivo */}
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-slate-450 uppercase tracking-wider">
-                            {!selectedTratamientoDetalle ? "Odontograma Planificación Activa" : `Plan de tratamiento: ${selectedTratamientoDetalle.estado === "presupuesto_aceptado" ? "Aceptado" : "Pendiente"}`}
-                          </span>
-                        </div>
-
-                        <Odontograma
-                          initialState={odontogramaInicial}
-                          readOnly={!!selectedTratamientoDetalle}
-                          mode={selectedTratamientoDetalle ? "final" : "treatment"}
-                          forceVista={getVistaPorEdad(selectedPaciente.edad)}
-                          procedimientosPlanteados={
-                            selectedTratamientoDetalle
-                              ? selectedTratamientoDetalle.procedimientos
-                              : [
-                                  ...activePlanProcedures,
-                                  ...(activeProcedureName && activeSelectedTeeth.length > 0
-                                    ? [{
-                                        nombre_procedimiento: activeProcedureName,
-                                        piezas: activeSelectedTeeth.join(", "),
-                                        notas: ""
-                                      }]
-                                    : [])
-                                ]
-                          }
-                          onToothClick={handleToothClickInPlan}
-                        />
-                      </div>
                     </div>
 
-                    {/* Ficha de Costos */}
+                    {/* Contenido Principal de Presupuesto */}
                     <div className="lg:col-span-12">
                       {!selectedTratamientoDetalle ? (
                         <PresupuestoCalculador
@@ -2005,8 +1973,51 @@ export default function HomeSPA() {
                           onActiveSelectedTeethChange={(teeth) => setActiveSelectedTeeth(teeth)}
                           onProceduresChange={(procs) => setActivePlanProcedures(procs)}
                           onActiveProcedureChange={(name) => setActiveProcedureName(name)}
+                          middleContent={
+                            <div className="space-y-4 mt-6 mb-6">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-450 uppercase tracking-wider">
+                                  Odontograma Planificación Activa
+                                </span>
+                              </div>
+                              <Odontograma
+                                initialState={odontogramaInicial}
+                                readOnly={false}
+                                mode="treatment"
+                                forceVista={getVistaPorEdad(selectedPaciente.edad)}
+                                procedimientosPlanteados={[
+                                  ...activePlanProcedures,
+                                  ...(activeProcedureName && activeSelectedTeeth.length > 0
+                                    ? [{
+                                        nombre_procedimiento: activeProcedureName,
+                                        piezas: activeSelectedTeeth.join(", "),
+                                        notas: ""
+                                      }]
+                                    : [])
+                                ]}
+                                onToothClick={handleToothClickInPlan}
+                              />
+                            </div>
+                          }
                         />
                       ) : (
+                        <div className="space-y-6">
+                          {/* Odontograma del plan guardado */}
+                          <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-slate-450 uppercase tracking-wider">
+                                {`Plan de tratamiento: ${selectedTratamientoDetalle.estado === "presupuesto_aceptado" ? "Aceptado" : "Pendiente"}`}
+                              </span>
+                            </div>
+                            <Odontograma
+                              initialState={odontogramaInicial}
+                              readOnly={true}
+                              mode="final"
+                              forceVista={getVistaPorEdad(selectedPaciente.edad)}
+                              procedimientosPlanteados={selectedTratamientoDetalle.procedimientos}
+                              onToothClick={handleToothClickInPlan}
+                            />
+                          </div>
                         <div className={`border rounded-3xl p-6 shadow-xl space-y-6 transition-colors ${
                           isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
                         }`}>
@@ -2071,6 +2082,7 @@ export default function HomeSPA() {
                             <div className="bg-slate-50 dark:bg-slate-855 p-4 rounded-xl border text-center text-emerald-600"><span className="text-[10px] block uppercase font-bold">Adelanto Cobrado</span><span className="font-black mt-1 block">s/. {selectedTratamientoDetalle.adelanto.toFixed(2)}</span></div>
                             <div className="bg-slate-50 dark:bg-slate-855 p-4 rounded-xl border text-center text-amber-500"><span className="text-[10px] block uppercase font-bold">Saldo Pendiente</span><span className="font-black mt-1 block">s/. {selectedTratamientoDetalle.saldo.toFixed(2)}</span></div>
                           </div>
+                        </div>
                         </div>
                       )}
                     </div>

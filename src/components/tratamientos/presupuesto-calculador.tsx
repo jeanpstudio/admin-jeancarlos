@@ -37,6 +37,7 @@ interface PresupuestoCalculadorProps {
   onActiveSelectedTeethChange?: (teeth: number[]) => void;
   onProceduresChange?: (procs: SelectedProcedure[]) => void;
   onActiveProcedureChange?: (nombre: string | null) => void;
+  middleContent?: React.ReactNode;
 }
 
 export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
@@ -49,6 +50,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
   onActiveSelectedTeethChange,
   onProceduresChange,
   onActiveProcedureChange,
+  middleContent,
 }) => {
   const [selectedProcedures, setSelectedProcedures] = useState<SelectedProcedure[]>(initialProcedures);
   const [adelanto, setAdelanto] = useState<number>(initialAdelanto);
@@ -302,6 +304,8 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
           </div>
         </form>
       </div>
+
+      {middleContent}
 
       {/* SECCIÓN 2: DETALLE DEL PRESUPUESTO */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
