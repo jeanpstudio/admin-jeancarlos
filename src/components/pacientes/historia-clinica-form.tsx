@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState } from "react";
@@ -19,18 +20,21 @@ export interface PacienteData {
   enfermedades: string;
   medicamentos_actuales: string;
   motivo_consulta: string;
+  odontograma_inicial?: any;
 }
 
 interface HistoriaClinicaFormProps {
   initialData?: PacienteData;
   onSubmit: (data: PacienteData) => void;
   onCancel?: () => void;
+  onAgeChange?: (edad: number) => void;
 }
 
 export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
   initialData,
   onSubmit,
   onCancel,
+  onAgeChange,
 }) => {
   const [formData, setFormData] = useState<PacienteData>(() => initialData || {
     nombre_completo: "",
@@ -50,10 +54,14 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "edad" ? parseInt(value) || 0 : value,
-    }));
+    const updatedVal = name === "edad" ? parseInt(value) || 0 : value;
+    setFormData((prev) => {
+      const next = { ...prev, [name]: updatedVal };
+      if (name === "edad" && onAgeChange) {
+        onAgeChange(updatedVal as number);
+      }
+      return next;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {

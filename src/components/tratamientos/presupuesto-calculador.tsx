@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, DollarSign, Receipt, Tag, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Receipt, Tag, AlertCircle, CheckCircle2 } from "lucide-react";
+import { PROCEDIMIENTOS_CONFIG } from "@/components/odontograma/odontograma-config";
 
 export interface CatalogProcedure {
   id: string;
@@ -10,12 +13,13 @@ export interface CatalogProcedure {
 }
 
 export interface SelectedProcedure {
-  id: string; // Identificador temporal/único de la fila
+  id: string;
   procedimiento_id: string;
   nombre_procedimiento: string;
-  diente_numero?: number;
+  piezas: string;       // Piezas seleccionadas, ej: "14, 15"
+  cantidad: number;      // Cantidad de piezas u operaciones
   notas: string;
-  costo_final: number;
+  costo_final: number;   // Costo total pactado para la línea
 }
 
 interface PresupuestoCalculadorProps {
@@ -29,6 +33,10 @@ interface PresupuestoCalculadorProps {
     saldo: number;
   }) => void;
   onCancel?: () => void;
+  activeSelectedTeeth?: number[];
+  onActiveSelectedTeethChange?: (teeth: number[]) => void;
+  onProceduresChange?: (procs: SelectedProcedure[]) => void;
+  onActiveProcedureChange?: (nombre: string | null) => void;
 }
 
 export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
@@ -37,76 +45,148 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
   initialAdelanto = 0,
   onSubmit,
   onCancel,
+  activeSelectedTeeth = [],
+  onActiveSelectedTeethChange,
+  onProceduresChange,
+  onActiveProcedureChange,
 }) => {
   const [selectedProcedures, setSelectedProcedures] = useState<SelectedProcedure[]>(initialProcedures);
   const [adelanto, setAdelanto] = useState<number>(initialAdelanto);
   
-  // Variables locales del nuevo procedimiento que se va a agregar
+  // Variables locales del procedimiento en edición
   const [nuevoProcId, setNuevoProcId] = useState<string>("");
-  const [nuevoDiente, setNuevoDiente] = useState<string>("");
-  const [nuevoCosto, setNuevoCosto] = useState<number>(0);
+  const [nuevoCostoUnitario, setNuevoCostoUnitario] = useState<number>(0);
+  const [nuevoCostoTotal, setNuevoCostoTotal] = useState<number>(0);
+  const [cantidad, setCantidad] = useState<number>(1);
+  const [piezasTexto, setPiezasTexto] = useState<string>("");
   const [nuevasNotas, setNuevasNotas] = useState<string>("");
 
-  // Actualizar costo sugerido al cambiar el procedimiento seleccionado en el selector
-  useEffect(() => {
-    if (nuevoProcId) {
-      const proc = catalogo.find((p) => p.id === nuevoProcId);
-      if (proc) {
-        setNuevoCosto(proc.costo_base);
-      }
-    } else {
-      setNuevoCosto(0);
-    }
-  }, [nuevoProcId, catalogo]);
+  // Obtener la configuración del procedimiento seleccionado
+  const selectedCatalogItem = catalogo.find((p) => p.id === nuevoProcId);
+  const selectedConfig = selectedCatalogItem 
+    ? PROCEDIMIENTOS_CONFIG[selectedCatalogItem.nombre_procedimiento]
+    : null;
 
-  // Cálculos financieros reactivos
+  // Notificar al padre cuando cambian los procedimientos agregados
+  useEffect(() => {
+    if (onProceduresChange) {
+      onProceduresChange(selectedProcedures);
+    }
+  }, [selectedProcedures, onProceduresChange]);
+
+  // Notificar al padre cuando cambia el procedimiento seleccionado en el dropdown
+  useEffect(() => {
+    if (onActiveProcedureChange) {
+      onActiveProcedureChange(selectedCatalogItem?.nombre_procedimiento || null);
+    }
+  }, [selectedCatalogItem, onActiveProcedureChange]);
+
+  // Reactivamente actualizar costo unitario y habilitar campos al cambiar procedimiento
+  useEffect(() => {
+    if (selectedCatalogItem) {
+      setTimeout(() => {
+        setNuevoCostoUnitario(selectedCatalogItem.costo_base);
+        
+        // Si el procedimiento NO requiere pieza ni cantidad (costo único)
+        if (selectedConfig && !selectedConfig.requierePieza && !selectedConfig.requiereCantidad) {
+          setCantidad(1);
+          if (onActiveSelectedTeethChange) onActiveSelectedTeethChange([]);
+          setPiezasTexto("");
+        } else if (selectedConfig && selectedConfig.requierePieza) {
+          // Inicializar cantidad con las piezas seleccionadas activamente
+          setCantidad(activeSelectedTeeth.length > 0 ? activeSelectedTeeth.length : 1);
+        }
+      }, 0);
+    } else {
+      setTimeout(() => {
+        setNuevoCostoUnitario(0);
+        setCantidad(1);
+        setPiezasTexto("");
+        if (onActiveSelectedTeethChange) onActiveSelectedTeethChange([]);
+      }, 0);
+    }
+  }, [nuevoProcId, selectedCatalogItem]);
+
+  // Sincronizar piezas del odontograma hacia el input de texto de piezas y cantidad
+  useEffect(() => {
+    if (selectedConfig && selectedConfig.requierePieza) {
+      setTimeout(() => {
+        setPiezasTexto(activeSelectedTeeth.join(", "));
+        setCantidad(activeSelectedTeeth.length > 0 ? activeSelectedTeeth.length : 1);
+      }, 0);
+    }
+  }, [activeSelectedTeeth, selectedConfig]);
+
+  // Recalcular costo total reactivamente
+  useEffect(() => {
+    setTimeout(() => {
+      setNuevoCostoTotal(nuevoCostoUnitario * cantidad);
+    }, 0);
+  }, [nuevoCostoUnitario, cantidad]);
+
+  // Manejar cambio manual en el input de piezas dentales
+  const handlePiezasManualChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPiezasTexto(value);
+    
+    if (onActiveSelectedTeethChange) {
+      // Parsear texto (ej: "14, 15" -> [14, 15])
+      const parsedTeeth = value
+        .split(",")
+        .map((s) => parseInt(s.trim()))
+        .filter((num) => !isNaN(num) && num >= 11 && num <= 85);
+      onActiveSelectedTeethChange(parsedTeeth);
+    }
+  };
+
+  // Cálculos financieros globales
   const total = selectedProcedures.reduce((acc, curr) => acc + curr.costo_final, 0);
   const saldo = total - adelanto;
 
-  // Agregar procedimiento a la lista
+  // Agregar item
   const handleAgregarProcedimiento = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nuevoProcId) {
+    if (!nuevoProcId || !selectedCatalogItem) {
       alert("Por favor selecciona un procedimiento del catálogo.");
       return;
     }
 
-    const procCatalog = catalogo.find((p) => p.id === nuevoProcId);
-    if (!procCatalog) return;
-
     const nuevoItem: SelectedProcedure = {
       id: Math.random().toString(36).substring(2, 9),
-      procedimiento_id: procCatalog.id,
-      nombre_procedimiento: procCatalog.nombre_procedimiento,
-      diente_numero: nuevoDiente ? parseInt(nuevoDiente) || undefined : undefined,
+      procedimiento_id: selectedCatalogItem.id,
+      nombre_procedimiento: selectedCatalogItem.nombre_procedimiento,
+      piezas: selectedConfig?.requierePieza ? piezasTexto.trim() : "",
+      cantidad: selectedConfig?.requiereCantidad || selectedConfig?.requierePieza ? cantidad : 1,
       notas: nuevasNotas.trim(),
-      costo_final: nuevoCosto >= 0 ? nuevoCosto : 0,
+      costo_final: nuevoCostoTotal >= 0 ? nuevoCostoTotal : 0,
     };
 
     setSelectedProcedures((prev) => [...prev, nuevoItem]);
     
-    // Limpiar campos de inserción
+    // Limpiar campos
     setNuevoProcId("");
-    setNuevoDiente("");
-    setNuevoCosto(0);
     setNuevasNotas("");
+    setCantidad(1);
+    setPiezasTexto("");
+    if (onActiveSelectedTeethChange) onActiveSelectedTeethChange([]);
   };
 
-  // Eliminar procedimiento de la lista
+  // Eliminar item
   const handleEliminarProcedimiento = (id: string) => {
     setSelectedProcedures((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // Cambiar el costo final de un procedimiento ya agregado
+  // Editar costo final de una fila
   const handleCostoFilaChange = (id: string, nuevoCosto: number) => {
     setSelectedProcedures((prev) =>
       prev.map((p) => (p.id === id ? { ...p, costo_final: nuevoCosto >= 0 ? nuevoCosto : 0 } : p))
     );
   };
 
+  // Enviar presupuesto al padre
   const handleGuardarPresupuesto = () => {
     if (selectedProcedures.length === 0) {
-      alert("Por favor agrega al menos un procedimiento al presupuesto del tratamiento.");
+      alert("Por favor agrega al menos un procedimiento al presupuesto.");
       return;
     }
     onSubmit({
@@ -118,83 +198,104 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-12">
+    <div className="space-y-6 max-w-4xl mx-auto pb-6">
       
-      {/* SECCIÓN 1: FORMULARIO DE AÑADIDURA DINÁMICA */}
-      <div className="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/80 dark:border-slate-850/80 rounded-2xl p-5 shadow-sm space-y-5">
-        <div className="flex items-center gap-3 border-b border-slate-200/40 dark:border-slate-800 pb-4">
-          <div className="p-2.5 bg-teal-500/10 rounded-xl text-teal-600 dark:text-teal-400">
+      {/* SECCIÓN 1: FORMULARIO DE INSERCIÓN */}
+      <div className="bg-slate-50/50 dark:bg-slate-900/10 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center gap-3 border-b border-slate-200/50 dark:border-slate-800 pb-3">
+          <div className="p-2 bg-teal-500/10 rounded-lg text-teal-600 dark:text-teal-400">
             <Plus className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Registrar Procedimiento Clínico</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Selecciona procedimientos del catálogo y personaliza costos</p>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Registrar Procedimiento Clínico</h3>
+            <p className="text-[11px] text-slate-500">Seleccione un procedimiento y asigne sus piezas y cantidades correspondientes.</p>
           </div>
         </div>
 
-        <form onSubmit={handleAgregarProcedimiento} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          {/* Selector de Procedimiento */}
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Procedimiento del Catálogo</label>
-            <select
-              value={nuevoProcId}
-              onChange={(e) => setNuevoProcId(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-3 px-4 text-sm font-semibold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10"
-            >
-              <option value="">-- Selecciona un procedimiento --</option>
-              {catalogo.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre_procedimiento} (Base: s/. {p.costo_base})
-                </option>
-              ))}
-            </select>
+        <form onSubmit={handleAgregarProcedimiento} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Selector de Procedimiento */}
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Procedimiento Clínico</label>
+              <select
+                value={nuevoProcId}
+                onChange={(e) => setNuevoProcId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none"
+              >
+                <option value="">-- Seleccione un procedimiento --</option>
+                {catalogo.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre_procedimiento} (Base: s/. {p.costo_base})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Dientes / Piezas (Sólo si requierePieza es true) */}
+            {(!selectedConfig || selectedConfig.requierePieza) && (
+              <div className="space-y-1.5 transition-all">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Piezas Dentales {selectedConfig?.requierePieza && "*"}
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: 18, 46 o marque arriba"
+                  value={piezasTexto}
+                  onChange={handlePiezasManualChange}
+                  disabled={!nuevoProcId}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none disabled:opacity-50"
+                />
+              </div>
+            )}
+
+            {/* Cantidad (Sólo si requiereCantidad o requierePieza es true) */}
+            {(!selectedConfig || selectedConfig.requiereCantidad || selectedConfig.requierePieza) && (
+              <div className="space-y-1.5 transition-all">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cantidad</label>
+                <input
+                  type="number"
+                  value={cantidad}
+                  onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value) || 1))}
+                  min="1"
+                  disabled={!nuevoProcId}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none disabled:opacity-50"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Diente Específico */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pieza Dental (Opcional)</label>
-            <input
-              type="number"
-              placeholder="Ej. 18 o 46"
-              value={nuevoDiente}
-              onChange={(e) => setNuevoDiente(e.target.value)}
-              min="11"
-              max="85"
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-3 px-4 text-sm font-semibold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10"
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Notas Clínicas */}
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Notas o Indicaciones</label>
+              <input
+                type="text"
+                placeholder="Notas específicas para esta sesión..."
+                value={nuevasNotas}
+                onChange={(e) => setNuevasNotas(e.target.value)}
+                disabled={!nuevoProcId}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none disabled:opacity-50"
+              />
+            </div>
 
-          {/* Costo Acordado */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Costo Pactado (s/.)</label>
-            <input
-              type="number"
-              placeholder="s/."
-              value={nuevoCosto || ""}
-              onChange={(e) => setNuevoCosto(parseFloat(e.target.value) || 0)}
-              min="0"
-              step="0.01"
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-3 px-4 text-sm font-semibold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10"
-            />
-          </div>
+            {/* Costo Calculado */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Costo Estimado (s/.)</label>
+              <input
+                type="number"
+                value={nuevoCostoTotal || ""}
+                onChange={(e) => setNuevoCostoTotal(Math.max(0, parseFloat(e.target.value) || 0))}
+                min="0"
+                step="0.1"
+                disabled={!nuevoProcId}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-extrabold text-slate-850 dark:text-slate-150 focus:border-teal-500 focus:outline-none disabled:opacity-50"
+              />
+            </div>
 
-          {/* Notas */}
-          <div className="md:col-span-3 space-y-2">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Notas Clínicas o de Sesión</label>
-            <input
-              type="text"
-              placeholder="Indicaciones adicionales (Ej: curación con resina 3M, endodoncia de urgencia)"
-              value={nuevasNotas}
-              onChange={(e) => setNuevasNotas(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-3 px-4 text-sm font-semibold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10"
-            />
-          </div>
-
-          {/* Botón Agregar */}
-          <div className="md:col-span-1">
             <button
               type="submit"
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1 hover:scale-[1.02] cursor-pointer"
+              disabled={!nuevoProcId}
+              className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-slate-200 disabled:dark:bg-slate-800 disabled:text-slate-400 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer hover:scale-[1.01]"
             >
               <Plus className="h-4 w-4" /> Agregar Item
             </button>
@@ -202,68 +303,64 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
         </form>
       </div>
 
-      {/* SECCIÓN 2: DETALLE DEL PRESUPUESTO ACTUAL Y CÁLCULOS */}
-      <div className="bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/80 dark:border-slate-850/80 rounded-2xl p-5 shadow-sm space-y-5">
-        <div className="flex items-center gap-3 border-b border-slate-200/40 dark:border-slate-800 pb-4">
-          <div className="p-2.5 bg-teal-500/10 rounded-xl text-teal-600 dark:text-teal-400">
+      {/* SECCIÓN 2: DETALLE DEL PRESUPUESTO */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center gap-3 border-b border-slate-200/50 dark:border-slate-800 pb-3">
+          <div className="p-2 bg-teal-500/10 rounded-lg text-teal-600 dark:text-teal-400">
             <Receipt className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Plan de Tratamiento y Presupuesto</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Detalle financiero y estado de saldo actual</p>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Presupuesto del Plan de Tratamiento</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Conceptos médicos y balances financieros acordados</p>
           </div>
         </div>
 
         {selectedProcedures.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-            <AlertCircle className="h-10 w-10 mx-auto text-slate-300 mb-2 animate-bounce" />
-            <p className="text-sm font-medium">No se han registrado procedimientos aún.</p>
-            <p className="text-xs text-slate-450 mt-1">Selecciona un elemento arriba para comenzar a estructurar el presupuesto.</p>
+          <div className="text-center py-8 text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+            <AlertCircle className="h-9 w-9 mx-auto text-slate-300 mb-1 animate-pulse" />
+            <p className="text-xs font-semibold">No se han registrado procedimientos aún.</p>
+            <p className="text-[10px] text-slate-450 mt-0.5">Seleccione un elemento arriba para comenzar.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Tabla de Procedimientos Agregados */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
-              <table className="w-full text-left border-collapse">
+          <div className="space-y-5">
+            {/* Tabla */}
+            <div className="overflow-x-auto rounded-xl border border-slate-150 dark:border-slate-800">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                    <th className="p-4">Procedimiento</th>
-                    <th className="p-4 text-center">Pieza Dental</th>
-                    <th className="p-4">Notas</th>
-                    <th className="p-4 text-right">Costo Pactado</th>
-                    <th className="p-4 text-center w-12">Acción</th>
+                  <tr className="bg-slate-50 dark:bg-slate-850 text-slate-500 font-bold uppercase tracking-wider">
+                    <th className="p-3">Procedimiento</th>
+                    <th className="p-3 text-center">Piezas</th>
+                    <th className="p-3 text-center">Cant.</th>
+                    <th className="p-3">Notas</th>
+                    <th className="p-3 text-right">Costo Final</th>
+                    <th className="p-3 text-center w-10">Eliminar</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-                  {selectedProcedures.map((proc) => (
-                    <tr key={proc.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors">
-                      <td className="p-4 font-bold text-slate-800 dark:text-slate-150">
-                        {proc.nombre_procedimiento}
-                      </td>
-                      <td className="p-4 text-center font-extrabold text-teal-605 dark:text-teal-400">
-                        {proc.diente_numero ? `# ${proc.diente_numero}` : "--"}
-                      </td>
-                      <td className="p-4 text-slate-500 dark:text-slate-400 font-medium">
-                        {proc.notas || <span className="italic text-slate-300 dark:text-slate-700">Sin notas</span>}
-                      </td>
-                      <td className="p-4 text-right">
+                <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+                  {selectedProcedures.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors">
+                      <td className="p-3 font-bold text-slate-800 dark:text-slate-150">{item.nombre_procedimiento}</td>
+                      <td className="p-3 text-center font-extrabold text-teal-600 dark:text-teal-400">{item.piezas || "--"}</td>
+                      <td className="p-3 text-center font-bold text-slate-600 dark:text-slate-400">{item.cantidad}</td>
+                      <td className="p-3 text-slate-500 dark:text-slate-450 font-medium">{item.notas || "--"}</td>
+                      <td className="p-3 text-right">
                         <div className="inline-flex items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1">
-                          <span className="text-xs text-slate-400 mr-1 font-bold">s/.</span>
+                          <span className="text-[10px] text-slate-400 mr-1 font-bold">s/.</span>
                           <input
                             type="number"
-                            value={proc.costo_final}
-                            onChange={(e) => handleCostoFilaChange(proc.id, parseFloat(e.target.value) || 0)}
+                            value={item.costo_final}
+                            onChange={(e) => handleCostoFilaChange(item.id, parseFloat(e.target.value) || 0)}
                             min="0"
-                            step="0.1"
-                            className="w-20 text-right bg-transparent focus:outline-none font-bold text-slate-800 dark:text-slate-150 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500/10"
+                            step="1"
+                            className="w-16 text-right bg-transparent focus:outline-none font-bold text-slate-800 dark:text-slate-150"
                           />
                         </div>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="p-3 text-center">
                         <button
                           type="button"
-                          onClick={() => handleEliminarProcedimiento(proc.id)}
-                          className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          onClick={() => handleEliminarProcedimiento(item.id)}
+                          className="text-slate-400 hover:text-red-500 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -274,70 +371,50 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
               </table>
             </div>
 
-            {/* Ficha Resumen de Costos y Balance de Saldo */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Balances */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               
-              {/* TOTAL COSTO GENERAL */}
-              <div className="bg-gradient-to-br from-teal-50/50 to-teal-100/30 dark:from-emerald-950/20 dark:to-emerald-900/10 p-5 rounded-2xl border border-teal-100 dark:border-emerald-900/50 flex flex-col justify-between">
+              {/* Total */}
+              <div className="bg-teal-500/5 dark:bg-emerald-950/10 p-4 rounded-xl border border-teal-500/10 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-bold text-teal-600 dark:text-emerald-400 uppercase tracking-widest">Total del Presupuesto</span>
-                  <p className="text-[28px] font-black text-teal-700 dark:text-emerald-450 mt-1 flex items-baseline gap-1">
-                    <span className="text-lg font-bold">s/.</span>
-                    {total.toFixed(2)}
-                  </p>
+                  <span className="text-[10px] font-bold text-teal-600 dark:text-emerald-450 uppercase tracking-widest">Total Presupuestado</span>
+                  <p className="text-xl font-black text-teal-700 dark:text-emerald-400 mt-1">s/. {total.toFixed(2)}</p>
                 </div>
-                <div className="text-[10px] text-teal-600 dark:text-emerald-400 mt-2 font-medium flex items-center gap-1">
-                  <Tag className="h-3 w-3" /> Suma total de procedimientos agregados.
+                <span className="text-[9px] text-slate-400 font-bold block mt-1"><Tag className="h-3 w-3 inline mr-1" /> Costo total estimado del plan.</span>
+              </div>
+
+              {/* Adelanto */}
+              <div className="bg-slate-50 dark:bg-slate-850 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Adelanto Recibido</label>
+                  <input
+                    type="number"
+                    value={adelanto || ""}
+                    onChange={(e) => setAdelanto(Math.min(total, parseFloat(e.target.value) || 0))}
+                    placeholder="Monto adelanto"
+                    min="0"
+                    max={total}
+                    step="0.01"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm font-extrabold text-slate-800 dark:text-slate-150 mt-1 focus:border-teal-500 focus:outline-none"
+                  />
                 </div>
               </div>
 
-              {/* ADELANTO RECIBIDO */}
-              <div className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
+              {/* Saldo */}
+              <div className={`p-4 rounded-xl border flex flex-col justify-between ${
+                saldo > 0 ? "bg-yellow-500/5 border-yellow-500/10" : "bg-emerald-500/5 border-emerald-500/10"
+              }`}>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Adelanto / Pago a Cuenta</label>
-                  <div className="relative mt-2">
-                    <span className="absolute left-3.5 top-3.5 text-slate-400 font-bold text-sm">s/.</span>
-                    <input
-                      type="number"
-                      value={adelanto || ""}
-                      onChange={(e) => setAdelanto(parseFloat(e.target.value) || 0)}
-                      placeholder="Monto de Adelanto"
-                      min="0"
-                      max={total}
-                      step="0.01"
-                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-3 pl-9 pr-4 text-lg font-extrabold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10"
-                    />
-                  </div>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-2 font-medium">
-                  Ingrese el pago parcial recibido en esta sesión.
-                </div>
-              </div>
-
-              {/* SALDO PENDIENTE */}
-              <div className="bg-gradient-to-br from-yellow-50/70 to-yellow-100/30 dark:from-yellow-950/10 dark:to-yellow-900/5 p-5 rounded-2xl border border-yellow-100 dark:border-yellow-900/30 flex flex-col justify-between">
-                <div>
-                  <span className="text-xs font-bold text-yellow-600 dark:text-yellow-450 uppercase tracking-widest">Saldo Pendiente (Deuda)</span>
-                  <p className={`text-[28px] font-black mt-1 flex items-baseline gap-1 ${
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                    saldo > 0 ? "text-yellow-600 dark:text-yellow-450" : "text-emerald-600 dark:text-emerald-450"
+                  }`}>Saldo Restante</span>
+                  <p className={`text-xl font-black mt-1 ${
                     saldo > 0 ? "text-yellow-600 dark:text-yellow-450" : "text-emerald-600 dark:text-emerald-400"
-                  }`}>
-                    <span className="text-lg font-bold">s/.</span>
-                    {saldo.toFixed(2)}
-                  </p>
+                  }`}>s/. {saldo.toFixed(2)}</p>
                 </div>
-                <div className="text-[10px] mt-2 font-medium flex items-center gap-1 text-yellow-700 dark:text-yellow-450">
-                  {saldo > 0 ? (
-                    <>
-                      <AlertCircle className="h-3 w-3" />
-                      Debe ser cancelado al finalizar.
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                      <span className="text-emerald-600">Presupuesto cancelado al 100%.</span>
-                    </>
-                  )}
-                </div>
+                <span className="text-[9px] text-slate-400 font-bold block mt-1">
+                  {saldo > 0 ? "✓ Saldo a liquidar en citas." : "✓ Pago completado al 100%."}
+                </span>
               </div>
 
             </div>
@@ -345,13 +422,13 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
         )}
       </div>
 
-      {/* BOTONES DE CONTROL */}
-      <div className="flex justify-end items-center gap-4">
+      {/* Controles de Envío */}
+      <div className="flex justify-end gap-3 items-center">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 text-sm font-bold rounded-xl transition-all"
+            className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-250 text-slate-700 dark:text-slate-350 text-xs font-bold rounded-xl transition-all"
           >
             Cancelar
           </button>
@@ -360,7 +437,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
           type="button"
           onClick={handleGuardarPresupuesto}
           disabled={selectedProcedures.length === 0}
-          className="px-8 py-3 bg-teal-600 disabled:bg-slate-200 disabled:dark:bg-slate-850 disabled:text-slate-400 hover:bg-teal-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-teal-500/10 hover:shadow-teal-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+          className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-200 disabled:dark:bg-slate-800 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
         >
           Guardar Tratamiento y Costos
         </button>
