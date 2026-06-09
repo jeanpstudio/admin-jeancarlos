@@ -37,7 +37,8 @@ import {
   Save,
   CheckSquare,
   Clock,
-  Send
+  Send,
+  Menu
 } from "lucide-react";
 
 import { Odontograma, OdontogramaState, ToothState, crearDienteVacio } from "@/components/odontograma/odontograma";
@@ -80,6 +81,7 @@ export interface TreatmentSession {
 export default function HomeSPA() {
   // --- TEMAS Y PREFERENCIAS ---
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // --- ESTADOS GENERALES ---
   const [pacientes, setPacientes] = useState<PacienteData[]>([]);
@@ -253,7 +255,7 @@ export default function HomeSPA() {
       if (!error && data) {
         const listadoConProcedimientos: TreatmentSession[] = [];
         for (const tr of data) {
-          const { data: detalles } = await supabase
+          const { data: detalles, error: detError } = await supabase
             .from("detalles_treatment")
             .select(`
               id,
@@ -265,6 +267,10 @@ export default function HomeSPA() {
               procedimientos_catalogo(nombre_procedimiento)
             `)
             .eq("tratamiento_paciente_id", tr.id);
+
+          if (detError) {
+            console.error("Error al obtener detalles del tratamiento:", detError);
+          }
 
           const procedimientosMapeados: SelectedProcedure[] = detalles ? detalles.map((d: any) => ({
             id: d.id,
@@ -290,9 +296,11 @@ export default function HomeSPA() {
         }
         setTratamientos(listadoConProcedimientos);
       } else {
+        console.error("Error en fetchTratamientos de Supabase:", error);
         loadLocalTratamientosFallback(pacienteId);
       }
     } catch (e) {
+      console.error("Excepción en fetchTratamientos:", e);
       loadLocalTratamientosFallback(pacienteId);
     }
   };
@@ -318,9 +326,11 @@ export default function HomeSPA() {
       if (!error && data) {
         setSaldosIndependientes(data);
       } else {
+        console.error("Error en fetchSaldosIndependientes:", error);
         loadLocalSaldosFallback(pacienteId);
       }
     } catch (e) {
+      console.error("Excepción en fetchSaldosIndependientes:", e);
       loadLocalSaldosFallback(pacienteId);
     }
   };
@@ -417,6 +427,11 @@ export default function HomeSPA() {
   // Cargar tratamientos y sincronizar odontograma activo al cambiar el paciente seleccionado
   useEffect(() => {
     if (selectedPacienteId) {
+      // Limpiar datos del paciente anterior de inmediato para evitar visualización temporal de datos ajenos
+      setTratamientos([]);
+      setSaldosIndependientes([]);
+      setSelectedTratamientoDetalle(null);
+
       fetchTratamientos(selectedPacienteId);
       fetchSaldosIndependientes(selectedPacienteId);
       
@@ -425,7 +440,6 @@ export default function HomeSPA() {
         if (pac) {
           setOdontogramaInicial(pac.odontograma_inicial || {});
         }
-        setSelectedTratamientoDetalle(null);
         setIsEditingHistory(false);
         setActiveSubTab("historia");
         setActivePlanProcedures([]);
@@ -445,6 +459,22 @@ export default function HomeSPA() {
       }, 0);
     }
   }, [selectedTratamientoDetalle]);
+
+  // Seleccionar automáticamente el primer tratamiento aceptado al entrar al tab de sesiones o cargarse los tratamientos
+  useEffect(() => {
+    if (activeSubTab === "sesiones") {
+      const accepted = tratamientos.filter(t => t.estado === "presupuesto_aceptado");
+      if (accepted.length > 0) {
+        if (!selectedTratamientoDetalle || 
+            selectedTratamientoDetalle.estado !== "presupuesto_aceptado" || 
+            !accepted.some(t => t.id === selectedTratamientoDetalle.id)) {
+          setSelectedTratamientoDetalle(accepted[0]);
+        }
+      } else {
+        setSelectedTratamientoDetalle(null);
+      }
+    }
+  }, [activeSubTab, tratamientos, selectedTratamientoDetalle]);
 
   const syncLocalPacientes = (listado: PacienteData[]) => {
     localStorage.setItem("clinica_dental_zuniga_pacientes", JSON.stringify(listado));
@@ -688,11 +718,14 @@ export default function HomeSPA() {
 
       if (!error) {
         setTratamientos(prev => prev.map(t => t.id === trId ? { ...t, estado: "presupuesto_aceptado" } : t));
+        setSelectedTratamientoDetalle(prev => prev && prev.id === trId ? { ...prev, estado: "presupuesto_aceptado" } : prev);
         alert("¡Presupuesto ACEPTADO! Ahora puede registrar las sesiones clínicas.");
       } else {
+        console.error("Error en handleAceptarPresupuesto:", error);
         aceptarPresupuestoLocalFallback(trId);
       }
     } catch (e) {
+      console.error("Excepción en handleAceptarPresupuesto:", e);
       aceptarPresupuestoLocalFallback(trId);
     }
   };
@@ -700,6 +733,7 @@ export default function HomeSPA() {
   const aceptarPresupuestoLocalFallback = (trId: string) => {
     const actualizados = tratamientos.map(t => t.id === trId ? { ...t, estado: "presupuesto_aceptado" as const } : t);
     setTratamientos(actualizados);
+    setSelectedTratamientoDetalle(prev => prev && prev.id === trId ? { ...prev, estado: "presupuesto_aceptado" as const } : prev);
     localStorage.setItem(`clinica_dental_zuniga_tratamientos_${selectedPacienteId}`, JSON.stringify(actualizados));
     alert("¡Presupuesto Aceptado localmente (Offline)!");
   };
@@ -1163,14 +1197,16 @@ export default function HomeSPA() {
   // RENDERING PANEL PRINCIPAL DE LA SPA
   // =========================================================================
   return (
-    <div className={`min-h-screen flex font-sans select-none overflow-x-hidden transition-colors duration-200 ${
+    <div className={`min-h-screen flex relative transition-colors duration-250 ${
       isDarkMode 
         ? "bg-slate-950 text-slate-100 dark" 
         : "bg-slate-50 text-slate-800"
     }`}>
       
       {/* 1. SIDEBAR */}
-      <aside className={`fixed inset-y-0 left-0 w-64 border-r p-6 flex flex-col justify-between z-20 transition-colors duration-200 ${
+      <aside className={`fixed inset-y-0 left-0 w-64 border-r p-6 flex flex-col justify-between z-30 transition-all duration-300 ${
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      } ${
         isDarkMode 
           ? "bg-slate-900 border-slate-800 text-slate-300" 
           : "bg-teal-900 border-teal-800 text-teal-100"
@@ -1214,11 +1250,11 @@ export default function HomeSPA() {
             <span className={`px-3 text-[10px] font-bold uppercase tracking-wider block mb-2 ${isDarkMode ? "text-slate-500" : "text-teal-350"}`}>Navegación</span>
             
             <button
-              onClick={() => { setActiveTab("inicio"); setSelectedPacienteId(null); }}
+              onClick={() => { setActiveTab("inicio"); setSelectedPacienteId(null); setIsSidebarOpen(false); }}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all w-full text-left cursor-pointer ${
                 activeTab === "inicio"
                   ? isDarkMode 
-                    ? "bg-emerald-600 text-white shadow-lg" 
+                    ? "bg-emerald-650 text-white shadow-lg" 
                     : "bg-teal-750 text-white shadow-md font-bold"
                   : isDarkMode
                     ? "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
@@ -1229,11 +1265,11 @@ export default function HomeSPA() {
             </button>
 
             <button
-              onClick={() => { setActiveTab("pacientes"); setSelectedPacienteId(null); }}
+              onClick={() => { setActiveTab("pacientes"); setSelectedPacienteId(null); setIsSidebarOpen(false); }}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all w-full text-left cursor-pointer ${
                 activeTab === "pacientes"
                   ? isDarkMode 
-                    ? "bg-emerald-600 text-white shadow-lg" 
+                    ? "bg-emerald-650 text-white shadow-lg" 
                     : "bg-teal-750 text-white shadow-md font-bold"
                   : isDarkMode
                     ? "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
@@ -1245,11 +1281,11 @@ export default function HomeSPA() {
 
             {selectedPaciente && (
               <button
-                onClick={() => setActiveTab("expediente")}
+                onClick={() => { setActiveTab("expediente"); setIsSidebarOpen(false); }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all w-full text-left cursor-pointer ${
                   activeTab === "expediente"
                     ? isDarkMode 
-                      ? "bg-emerald-600 text-white shadow-lg" 
+                      ? "bg-emerald-655 text-white shadow-lg" 
                       : "bg-teal-750 text-white shadow-md font-bold"
                     : isDarkMode
                       ? "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
@@ -1281,8 +1317,38 @@ export default function HomeSPA() {
         </div>
       </aside>
 
+      {/* Overlay backdrop for tablet/mobile sidebar */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-20 lg:hidden cursor-pointer"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* 2. AREA DE CONTENIDO PRINCIPAL */}
-      <main className="flex-1 pl-64 min-h-screen flex flex-col relative">
+      <main className="flex-1 lg:pl-64 min-h-screen flex flex-col relative">
+        {/* Header Responsivo para Tablet/Móvil */}
+        <header className={`lg:hidden flex items-center justify-between px-6 py-4 border-b sticky top-0 z-20 transition-all duration-200 ${
+          isDarkMode 
+            ? "bg-slate-900 border-slate-800 text-slate-105" 
+            : "bg-teal-900 border-teal-850 text-white shadow-md"
+        }`}>
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className={`p-2 rounded-xl transition-all cursor-pointer ${
+              isDarkMode 
+                ? "bg-slate-800 hover:bg-slate-700 text-slate-200" 
+                : "bg-teal-955/40 hover:bg-teal-850/60 text-white"
+            }`}
+            aria-label="Abrir menú"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="font-extrabold text-sm tracking-tight flex items-center gap-2">
+            <Stethoscope className="h-4 w-4" /> C.D. Zúñiga
+          </span>
+          <div className="w-9" />
+        </header>
         {/* Gradientes decorativos */}
         <div className="absolute top-0 -left-4 w-96 h-96 rounded-full mix-blend-multiply filter blur-[128px] opacity-10 bg-teal-500"></div>
         <div className="absolute top-0 -right-4 w-96 h-96 rounded-full mix-blend-multiply filter blur-[128px] opacity-10 bg-emerald-400"></div>
@@ -1350,8 +1416,8 @@ export default function HomeSPA() {
               </div>
 
               {/* Pacientes recientes */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className={`border rounded-3xl p-6 shadow-xl lg:col-span-2 space-y-5 transition-colors ${
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className={`border rounded-3xl p-6 shadow-xl md:col-span-2 space-y-5 transition-colors ${
                   isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
                 }`}>
                   <div className="flex justify-between items-center border-b pb-4 border-slate-200 dark:border-slate-800">

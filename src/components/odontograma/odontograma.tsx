@@ -477,29 +477,27 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
       </div>
 
       {/* ARCADA DENTAL */}
-      <div className="space-y-10">
+      <div className="space-y-6">
         {/* Dentición Adulto */}
         {(vista === "todos" || vista === "adulto") && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Dentición Permanente (Adulto)</div>
             
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row justify-center items-center gap-4">
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+            <div className="space-y-3">
+              {/* Fila Superior */}
+              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
                   {renderFilaDientes(DIENTES_ADULTO_SUP_IZQ)}
-                </div>
-                <div className="hidden md:block w-[1.5px] h-14 bg-teal-500/20"></div>
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
                   {renderFilaDientes(DIENTES_ADULTO_SUP_DER)}
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row justify-center items-center gap-4 pt-1">
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+              {/* Fila Inferior */}
+              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
                   {renderFilaDientes(DIENTES_ADULTO_INF_IZQ)}
-                </div>
-                <div className="hidden md:block w-[1.5px] h-14 bg-teal-500/20"></div>
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
                   {renderFilaDientes(DIENTES_ADULTO_INF_DER)}
                 </div>
               </div>
@@ -509,26 +507,24 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
 
         {/* Dentición Infantil */}
         {(vista === "todos" || vista === "infantil") && (
-          <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-850">
+          <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-850">
             <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Dentición Temporal (Infantil)</div>
             
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row justify-center items-center gap-4">
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+            <div className="space-y-3">
+              {/* Fila Superior Infantil */}
+              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
                   {renderFilaDientes(DIENTES_NINO_SUP_IZQ)}
-                </div>
-                <div className="hidden md:block w-[1.5px] h-14 bg-teal-500/20"></div>
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
                   {renderFilaDientes(DIENTES_NINO_SUP_DER)}
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row justify-center items-center gap-4 pt-1">
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+              {/* Fila Inferior Infantil */}
+              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
                   {renderFilaDientes(DIENTES_NINO_INF_IZQ)}
-                </div>
-                <div className="hidden md:block w-[1.5px] h-14 bg-teal-500/20"></div>
-                <div className="flex gap-1.5 bg-slate-50 dark:bg-slate-900/20 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
                   {renderFilaDientes(DIENTES_NINO_INF_DER)}
                 </div>
               </div>
