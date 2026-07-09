@@ -16,6 +16,8 @@ import {
   ClipboardCheck,
   Edit3,
   Trash2,
+  X,
+  Check,
   DollarSign,
   Search,
   PlusCircle,
@@ -121,6 +123,12 @@ export default function HomeSPA() {
   const [nuevoSaldoFecha, setNuevoSaldoFecha] = useState<string>(new Date().toISOString().substring(0, 10));
   const [nuevoSaldoProcedimiento, setNuevoSaldoProcedimiento] = useState<string>("");
   const [nuevoSaldoMonto, setNuevoSaldoMonto] = useState<number>(0);
+
+  // Estados para la edición de Saldos Independientes
+  const [editingSaldoId, setEditingSaldoId] = useState<string | null>(null);
+  const [editingSaldoFecha, setEditingSaldoFecha] = useState<string>("");
+  const [editingSaldoProcedimiento, setEditingSaldoProcedimiento] = useState<string>("");
+  const [editingSaldoMonto, setEditingSaldoMonto] = useState<number>(0);
 
   // Para el registro de nuevas sesiones clínicas
   const [nuevaSesionNota, setNuevaSesionNota] = useState("");
@@ -417,6 +425,132 @@ export default function HomeSPA() {
     localStorage.setItem(`clinica_dental_zuniga_saldos_${selectedPacienteId}`, JSON.stringify(listado));
   };
 
+  const handleUpdateSaldoIndependiente = async (id: string, updatedFields: Partial<SaldoIndependiente>) => {
+    try {
+      const { error } = await supabase
+        .from("saldos_independientes")
+        .update(updatedFields)
+        .eq("id", id);
+      if (!error) {
+        setSaldosIndependientes(prev => prev.map(x => x.id === id ? { ...x, ...updatedFields } : x));
+      } else {
+        updateSaldoLocalFallback(id, updatedFields);
+      }
+    } catch (e) {
+      updateSaldoLocalFallback(id, updatedFields);
+    }
+  };
+
+  const updateSaldoLocalFallback = (id: string, updatedFields: Partial<SaldoIndependiente>) => {
+    const listado = saldosIndependientes.map(x => x.id === id ? { ...x, ...updatedFields } : x);
+    setSaldosIndependientes(listado);
+    localStorage.setItem(`clinica_dental_zuniga_saldos_${selectedPacienteId}`, JSON.stringify(listado));
+  };
+
+  const handleSaveEditSaldo = async (id: string) => {
+    if (!editingSaldoProcedimiento.trim()) {
+      alert("Por favor ingresa un procedimiento.");
+      return;
+    }
+    const updatedFields: Partial<SaldoIndependiente> = {
+      fecha: editingSaldoFecha ? new Date(editingSaldoFecha + "T12:00:00").toISOString() : new Date().toISOString(),
+      procedimiento: editingSaldoProcedimiento.trim(),
+      saldo: Number(editingSaldoMonto) || 0
+    };
+    await handleUpdateSaldoIndependiente(id, updatedFields);
+    setEditingSaldoId(null);
+  };
+
+  const handlePrintSaldos = () => {
+    const pac = pacientes.find(p => p.id === selectedPacienteId);
+    if (!pac) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Por favor permite las ventanas emergentes (pop-ups) para poder imprimir.");
+      return;
+    }
+
+    const rowsHtml = saldosIndependientes.map(item => `
+      <tr style="border-bottom: 1px solid #e2e8f0;">
+        <td style="padding: 12px 10px; font-size: 12px; color: #475569;">${new Date(item.fecha).toLocaleDateString("es-ES")}</td>
+        <td style="padding: 12px 10px; font-size: 12px; font-weight: bold; color: #1e293b;">${item.procedimiento}</td>
+        <td style="padding: 12px 10px; font-size: 12px; font-weight: bold; color: #0f172a; text-align: right;">s/. ${item.saldo.toFixed(2)}</td>
+      </tr>
+    `).join("");
+
+    const total = saldosIndependientes.reduce((acc, curr) => acc + curr.saldo, 0).toFixed(2);
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Reporte de Saldos - ${pac.nombre_completo}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #334155; }
+            .header { border-bottom: 2px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
+            .clinic-title { font-size: 24px; font-weight: 800; color: #047857; margin: 0; }
+            .subtitle { font-size: 12px; color: #64748b; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+            .patient-info { margin-bottom: 30px; font-size: 13px; background-color: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; }
+            .patient-info table { width: 100%; }
+            .patient-info td { padding: 6px 10px; }
+            .table-container { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .table-container th { background-color: #f1f5f9; padding: 12px 10px; font-size: 10px; font-weight: bold; color: #475569; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; text-align: left; }
+            .total-row td { padding: 18px 10px; font-size: 14px; font-weight: 800; color: #047857; border-top: 2px solid #cbd5e1; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="clinic-title">CONSULTORIO DENTAL DR. JEAN CARLOS ZÚÑIGA</h1>
+            <div class="subtitle">Estado de Saldos Pendientes</div>
+          </div>
+          <div class="patient-info">
+            <table>
+              <tr>
+                <td style="font-weight: bold; width: 15%; color: #64748b;">Paciente:</td>
+                <td style="color: #0f172a; font-weight: bold; font-size: 14px;">${pac.nombre_completo}</td>
+                <td style="font-weight: bold; width: 15%; color: #64748b;">DNI:</td>
+                <td style="color: #0f172a; font-weight: bold;">${pac.dni || "No registrado"}</td>
+              </tr>
+              <tr>
+                <td style="font-weight: bold; color: #64748b;">Teléfono:</td>
+                <td style="color: #0f172a;">${pac.telefono || "No especificado"}</td>
+                <td style="font-weight: bold; color: #64748b;">Fecha Reporte:</td>
+                <td style="color: #0f172a;">${new Date().toLocaleDateString("es-ES")}</td>
+              </tr>
+            </table>
+          </div>
+          <table class="table-container">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Fecha</th>
+                <th>Procedimiento / Detalle</th>
+                <th style="width: 25%; text-align: right;">Saldo Pendiente</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+              <tr class="total-row">
+                <td colspan="2" style="text-align: right; padding-right: 20px; font-size: 13px; color: #475569;">Total Saldo Pendiente:</td>
+                <td style="text-align: right;">s/. ${total}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top: 100px; text-align: center;">
+            <div style="width: 220px; border-top: 1px solid #cbd5e1; margin: 0 auto; padding-top: 6px; font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">
+              Firma y Sello Clínico
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // Cargar catálogos y pacientes al iniciar
   useEffect(() => {
     fetchPacientes();
@@ -488,6 +622,7 @@ export default function HomeSPA() {
   const handleCreatePaciente = async (data: PacienteData) => {
     const dataConOdontograma = {
       ...data,
+      dni: data.dni?.trim() ? data.dni.trim() : null,
       odontograma_inicial: registroOdontograma
     };
 
@@ -567,10 +702,14 @@ export default function HomeSPA() {
   // Modificar Datos Clínicos de Filiación
   const handleUpdateHistory = async (updatedData: PacienteData) => {
     if (!selectedPacienteId) return;
+    const dataToUpdate = {
+      ...updatedData,
+      dni: updatedData.dni?.trim() ? updatedData.dni.trim() : null
+    };
     try {
       const { error } = await supabase
         .from("pacientes")
-        .update(updatedData)
+        .update(dataToUpdate)
         .eq("id", selectedPacienteId);
 
       if (!error) {
@@ -920,7 +1059,7 @@ export default function HomeSPA() {
           </button>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md cursor-pointer"
           >
             <Printer className="h-4.5 w-4.5" /> Imprimir Documento
           </button>
@@ -1083,7 +1222,7 @@ export default function HomeSPA() {
           </button>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 bg-teal-650 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md cursor-pointer"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md cursor-pointer"
           >
             <Printer className="h-4.5 w-4.5" /> Imprimir Documento
           </button>
@@ -1717,11 +1856,21 @@ export default function HomeSPA() {
                     <div className={`border rounded-3xl p-6 shadow-md transition-colors ${
                       isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
                     }`}>
-                      <div className="border-b pb-3 mb-4 border-slate-250 dark:border-slate-800">
-                        <h3 className={`text-md font-bold flex items-center gap-2 ${isDarkMode ? "text-white" : "text-slate-850"}`}>
-                          <DollarSign className="h-5 w-5 text-emerald-650 dark:text-emerald-400" /> Registro de Procedimiento y Saldo Independiente
-                        </h3>
-                        <p className="text-xs text-slate-500">Procedimientos y saldos independientes asociados al paciente</p>
+                      <div className="border-b pb-3 mb-4 border-slate-250 dark:border-slate-800 flex justify-between items-center">
+                        <div>
+                          <h3 className={`text-md font-bold flex items-center gap-2 ${isDarkMode ? "text-white" : "text-slate-850"}`}>
+                            <DollarSign className="h-5 w-5 text-emerald-650 dark:text-emerald-400" /> Registro de Procedimiento y Saldo Independiente
+                          </h3>
+                          <p className="text-xs text-slate-500">Procedimientos y saldos independientes asociados al paciente</p>
+                        </div>
+                        {saldosIndependientes.length > 0 && (
+                          <button
+                            onClick={handlePrintSaldos}
+                            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md cursor-pointer hover:scale-[1.02]"
+                          >
+                            <Printer className="h-4.5 w-4.5" /> Imprimir Reporte
+                          </button>
+                        )}
                       </div>
 
                       {/* Formulario de Registro */}
@@ -1791,36 +1940,106 @@ export default function HomeSPA() {
                                 <th className="p-3 w-32">Fecha</th>
                                 <th className="p-3">Procedimiento</th>
                                 <th className="p-3 text-right w-32">Saldo</th>
-                                <th className="p-3 text-center w-20">Acciones</th>
+                                <th className="p-3 text-center w-24">Acciones</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
-                              {saldosIndependientes.map((item) => (
-                                <tr key={item.id} className="hover:bg-slate-50/20 dark:hover:bg-slate-850/20">
-                                  <td className="p-3 font-semibold text-slate-655 dark:text-slate-350">
-                                    {new Date(item.fecha).toLocaleDateString("es-ES")}
-                                  </td>
-                                  <td className="p-3 font-bold text-slate-800 dark:text-white">
-                                    {item.procedimiento}
-                                  </td>
-                                  <td className="p-3 text-right font-black text-slate-900 dark:text-white whitespace-nowrap">
-                                    s/. {item.saldo.toFixed(2)}
-                                  </td>
-                                  <td className="p-3 text-center">
-                                    <button
-                                      onClick={() => handleDeleteSaldoIndependiente(item.id!)}
-                                      className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
-                                      title="Eliminar saldo"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
+                              {saldosIndependientes.map((item) => {
+                                const isEditing = editingSaldoId === item.id;
+                                return (
+                                  <tr key={item.id} className="hover:bg-slate-50/20 dark:hover:bg-slate-850/20">
+                                    <td className="p-3 font-semibold text-slate-655 dark:text-slate-350">
+                                      {isEditing ? (
+                                        <input
+                                          type="date"
+                                          value={editingSaldoFecha}
+                                          onChange={(e) => setEditingSaldoFecha(e.target.value)}
+                                          className={`w-full px-2 py-1 rounded border text-xs ${
+                                            isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-850"
+                                          }`}
+                                        />
+                                      ) : (
+                                        new Date(item.fecha).toLocaleDateString("es-ES")
+                                      )}
+                                    </td>
+                                    <td className="p-3 font-bold text-slate-800 dark:text-white">
+                                      {isEditing ? (
+                                        <input
+                                          type="text"
+                                          value={editingSaldoProcedimiento}
+                                          onChange={(e) => setEditingSaldoProcedimiento(e.target.value)}
+                                          className={`w-full px-2 py-1 rounded border text-xs ${
+                                            isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-850"
+                                          }`}
+                                        />
+                                      ) : (
+                                        item.procedimiento
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-right font-black text-slate-900 dark:text-white whitespace-nowrap">
+                                      {isEditing ? (
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={editingSaldoMonto}
+                                          onChange={(e) => setEditingSaldoMonto(parseFloat(e.target.value) || 0)}
+                                          className={`w-24 text-right px-2 py-1 rounded border text-xs ${
+                                            isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-850"
+                                          }`}
+                                        />
+                                      ) : (
+                                        `s/. ${item.saldo.toFixed(2)}`
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      {isEditing ? (
+                                        <div className="flex justify-center gap-1">
+                                          <button
+                                            onClick={() => handleSaveEditSaldo(item.id!)}
+                                            className="text-emerald-500 hover:text-emerald-700 transition-colors p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/20 cursor-pointer"
+                                            title="Guardar cambios"
+                                          >
+                                            <Check className="h-4 w-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingSaldoId(null)}
+                                            className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                                            title="Cancelar"
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex justify-center gap-1">
+                                          <button
+                                            onClick={() => {
+                                              setEditingSaldoId(item.id!);
+                                              setEditingSaldoFecha(new Date(item.fecha).toISOString().substring(0, 10));
+                                              setEditingSaldoProcedimiento(item.procedimiento);
+                                              setEditingSaldoMonto(item.saldo);
+                                            }}
+                                            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                                            title="Editar saldo"
+                                          >
+                                            <Edit3 className="h-4 w-4" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteSaldoIndependiente(item.id!)}
+                                            className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
+                                            title="Eliminar saldo"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                               {/* Fila del Total */}
                               <tr className="bg-slate-50/50 dark:bg-slate-900/50 font-bold border-t-2 border-slate-200 dark:border-slate-755">
                                 <td colSpan={2} className="p-3 text-right text-slate-500">Total Saldo Pendiente:</td>
-                                <td className="p-3 text-right font-black text-emerald-600 dark:text-emerald-450 text-sm whitespace-nowrap">
+                                <td className="p-3 text-right font-black text-emerald-600 dark:text-emerald-455 text-sm whitespace-nowrap">
                                   s/. {saldosIndependientes.reduce((acc, curr) => acc + curr.saldo, 0).toFixed(2)}
                                 </td>
                                 <td></td>
@@ -1865,19 +2084,57 @@ export default function HomeSPA() {
                               <div><span className="text-slate-400 text-[9px] block">Dirección:</span><span className="text-slate-700 dark:text-slate-200">{selectedPaciente.direccion || "No registrada"}</span></div>
                             </div>
                             <div className="space-y-3 border-l pl-6 border-slate-200 dark:border-slate-800">
-                              <h4 className="text-[10px] font-extrabold text-slate-450 uppercase tracking-widest">Antecedentes Médicos</h4>
+                              <h4 className="text-[10px] font-extrabold text-slate-450 uppercase tracking-widest mb-1">Antecedentes Médicos</h4>
+                              
+                              {/* Alergias */}
                               <div className={`p-3 rounded-xl border ${
-                                selectedPaciente.alergias && selectedPaciente.alergias.toLowerCase() !== "ninguna" && selectedPaciente.alergias.toLowerCase() !== "ninguno"
-                                  ? "bg-red-500/10 border-red-500/20 text-red-600"
+                                selectedPaciente.alergias && 
+                                !["ninguna", "ninguno", "no", "no presenta", "ningun", "ningún"].includes(selectedPaciente.alergias.toLowerCase().trim())
+                                  ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
                                   : "bg-slate-50 dark:bg-slate-950 border-slate-150 dark:border-slate-850 text-slate-500"
                               }`}>
                                 <span className="font-extrabold flex items-center gap-1 text-[9px] uppercase"><ShieldAlert className="h-3.5 w-3.5" /> Alergias:</span>
                                 <p className="text-xs font-bold leading-tight mt-1">{selectedPaciente.alergias || "Ninguna alergia registrada."}</p>
                               </div>
-                              <div><span className="text-slate-400 text-[9px] block">Enfermedades Sistémicas:</span><p className="text-slate-655 dark:text-slate-300 font-medium leading-tight">{selectedPaciente.enfermedades || "Ninguna."}</p></div>
-                              <div><span className="text-slate-400 text-[9px] block">Medicamentos Consumidos:</span><p className="text-slate-655 dark:text-slate-300 font-medium leading-tight">{selectedPaciente.medicamentos_actuales || "Ninguno."}</p></div>
-                              <div><span className="text-slate-400 text-[9px] block">Hemorragias / Coagulación:</span><p className="text-slate-655 dark:text-slate-300 font-medium leading-tight">{selectedPaciente.hemorragias || "Ninguna."}</p></div>
-                              <div><span className="text-slate-400 text-[9px] block">Motivo de Consulta:</span><p className="text-slate-655 dark:text-slate-300 font-bold leading-tight">{selectedPaciente.motivo_consulta}</p></div>
+
+                              {/* Enfermedades Sistémicas */}
+                              <div className={`p-3 rounded-xl border ${
+                                selectedPaciente.enfermedades && 
+                                !["ninguna", "ninguno", "no", "no presenta", "ningun", "ningún"].includes(selectedPaciente.enfermedades.toLowerCase().trim())
+                                  ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                                  : "bg-slate-50 dark:bg-slate-950 border-slate-150 dark:border-slate-850 text-slate-500"
+                              }`}>
+                                <span className="font-extrabold flex items-center gap-1 text-[9px] uppercase"><ShieldAlert className="h-3.5 w-3.5" /> Enfermedades Sistémicas:</span>
+                                <p className="text-xs font-bold leading-tight mt-1">{selectedPaciente.enfermedades || "Ninguna."}</p>
+                              </div>
+
+                              {/* Medicamentos Consumidos */}
+                              <div className={`p-3 rounded-xl border ${
+                                selectedPaciente.medicamentos_actuales && 
+                                !["ninguna", "ninguno", "no", "no presenta", "ningun", "ningún"].includes(selectedPaciente.medicamentos_actuales.toLowerCase().trim())
+                                  ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                                  : "bg-slate-50 dark:bg-slate-950 border-slate-150 dark:border-slate-850 text-slate-500"
+                              }`}>
+                                <span className="font-extrabold flex items-center gap-1 text-[9px] uppercase"><ShieldAlert className="h-3.5 w-3.5" /> Medicamentos Consumidos:</span>
+                                <p className="text-xs font-bold leading-tight mt-1">{selectedPaciente.medicamentos_actuales || "Ninguno."}</p>
+                              </div>
+
+                              {/* Hemorragias / Coagulación */}
+                              <div className={`p-3 rounded-xl border ${
+                                selectedPaciente.hemorragias && 
+                                !["ninguna", "ninguno", "no", "no presenta", "ningun", "ningún"].includes(selectedPaciente.hemorragias.toLowerCase().trim())
+                                  ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                                  : "bg-slate-50 dark:bg-slate-950 border-slate-150 dark:border-slate-850 text-slate-500"
+                              }`}>
+                                <span className="font-extrabold flex items-center gap-1 text-[9px] uppercase"><ShieldAlert className="h-3.5 w-3.5" /> Hemorragias / Coagulación:</span>
+                                <p className="text-xs font-bold leading-tight mt-1">{selectedPaciente.hemorragias || "Ninguna."}</p>
+                              </div>
+
+                              {/* Motivo de Consulta */}
+                              <div className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-950 border-slate-150 dark:border-slate-850 text-slate-700 dark:text-slate-350">
+                                <span className="font-extrabold flex items-center gap-1 text-[9px] uppercase"><FileText className="h-3.5 w-3.5 text-teal-650 dark:text-emerald-450" /> Motivo de Consulta:</span>
+                                <p className="text-xs font-bold leading-tight mt-1 text-slate-800 dark:text-white">{selectedPaciente.motivo_consulta}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1897,7 +2154,7 @@ export default function HomeSPA() {
                         </div>
                         <button
                           onClick={triggerPrintHistory}
-                          className="flex items-center gap-1.5 bg-teal-655 hover:bg-teal-700 text-white font-bold text-[11px] px-3.5 py-2 rounded-xl transition-all shadow-md cursor-pointer hover:scale-[1.02]"
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] px-3.5 py-2 rounded-xl transition-all shadow-md cursor-pointer hover:scale-[1.02]"
                         >
                           <Printer className="h-3.5 w-3.5" /> Exportar Historial (PDF)
                         </button>
@@ -2016,7 +2273,7 @@ export default function HomeSPA() {
                       </div>
                       <button
                         onClick={() => handleSaveOdontogramaInicial(odontogramaInicial)}
-                        className="flex items-center gap-1.5 bg-teal-650 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md cursor-pointer"
+                        className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md cursor-pointer"
                       >
                         <Save className="h-4 w-4" /> Guardar Diagnóstico de Ingreso
                       </button>
@@ -2327,7 +2584,7 @@ export default function HomeSPA() {
 
                                 <button
                                   onClick={() => handleAddSessionLog(selectedTratamientoDetalle.id)}
-                                  className="w-full flex items-center justify-center gap-1.5 bg-teal-650 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl shadow-md cursor-pointer hover:scale-[1.01]"
+                                  className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow-md cursor-pointer hover:scale-[1.01]"
                                 >
                                   <Send className="h-4 w-4" /> Registrar Sesión
                                 </button>

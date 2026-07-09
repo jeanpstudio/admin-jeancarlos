@@ -84,7 +84,7 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
       proc.corona_venner_ivocrom ||
       proc.corona_jacket
     );
-    const hasEndo = !!(proc.endodoncia_anterior || proc.endodoncia_posterior);
+    const hasEndo = !!(proc.endodoncia_anterior || proc.endodoncia_posterior || diag.endodoncia_inicial);
     const hasImplant = !!proc.implante;
     
     // Colores
@@ -97,6 +97,13 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
       : "fill-slate-50 dark:fill-slate-900";
 
     const rootFill = "fill-slate-50 dark:fill-slate-900";
+
+    const isEndoBuena = 
+      proc.endodoncia_anterior === "buena" || 
+      proc.endodoncia_posterior === true || 
+      diag.endodoncia_inicial === "bueno";
+
+    const endoColor = isEndoBuena ? "#2563eb" : "#ef4444";
 
     // Cargar los trazados SVG desde la configuración configurable externa
     let toothPath = "";
@@ -118,45 +125,52 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
         if (type === "molar") {
           canals = (
             <>
-              <line x1="14" y1="20" x2="14" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="20" y1="10" x2="20" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="26" y1="16" x2="26" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="14" y1="20" x2="14" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="20" y1="10" x2="20" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="26" y1="16" x2="26" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
             </>
           );
         } else if (type === "premolar") {
           canals = (
             <>
-              <line x1="16" y1="13" x2="16" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="22" y1="13" x2="22" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="16" y1="13" x2="16" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="22" y1="13" x2="22" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
             </>
           );
         } else {
-          canals = <line x1="20" y1="8" x2="20" y2="32" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />;
+          canals = <line x1="20" y1="8" x2="20" y2="32" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />;
         }
       } else {
         if (type === "molar") {
           canals = (
             <>
-              <line x1="14" y1="18" x2="14" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="20" y1="18" x2="20" y2="38" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="26" y1="18" x2="26" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="14" y1="18" x2="14" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="20" y1="18" x2="20" y2="38" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="26" y1="18" x2="26" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
             </>
           );
         } else if (type === "premolar") {
           canals = (
             <>
-              <line x1="16" y1="16" x2="16" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="22" y1="16" x2="22" y2="35" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="16" y1="16" x2="16" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="22" y1="16" x2="22" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
             </>
           );
         } else {
-          canals = <line x1="20" y1="18" x2="20" y2="38" stroke={proc.endodoncia_anterior === "buena" ? "#2563eb" : "#ef4444"} strokeWidth="1.5" strokeDasharray="1.5,1.5" />;
+          canals = <line x1="20" y1="18" x2="20" y2="38" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />;
         }
       }
     }
 
+    let scaleClass = "";
+    if (diag.macrodoncia) {
+      scaleClass = " scale-110 origin-center transition-all duration-200";
+    } else if (diag.microdoncia) {
+      scaleClass = " scale-90 origin-center transition-all duration-200";
+    }
+
     return (
-      <svg viewBox="0 0 40 52" className="w-9 h-12 overflow-visible select-none my-0.5">
+      <svg viewBox="0 0 40 52" className={`w-9 h-12 overflow-visible select-none my-0.5 transform${scaleClass}`}>
         {hasImplant ? (
           <g>
             {/* Corona del implante */}
@@ -322,6 +336,7 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
     if (proc.implante) initialsList.push("IMP");
     if (proc.amalgama) initialsList.push("AM");
     if (proc.resina) initialsList.push("R");
+    if (proc.sellante) initialsList.push("S");
   }
 
   return (
@@ -379,7 +394,7 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
               initial === "IE" && diag.incrustacion_estetica === "malo" ? "text-red-655 bg-red-50 dark:bg-red-950/20" :
               initial === "AM" && proc.amalgama === "malo" ? "text-red-655 bg-red-50 dark:bg-red-950/20" :
               initial === "R" && proc.resina === "malo" ? "text-red-655 bg-red-50 dark:bg-red-950/20" :
-              ["IM", "IE", "AM", "R", "MAC", "MIC", "ED"].includes(initial) ? "text-blue-650 bg-blue-50 dark:bg-blue-950/20" :
+              ["IM", "IE", "AM", "R", "MAC", "MIC", "ED", "S"].includes(initial) ? "text-blue-650 bg-blue-50 dark:bg-blue-950/20" :
               "text-red-500 bg-red-50 dark:bg-red-950/20"
             }`}
           >

@@ -9,10 +9,14 @@ import {
   RotateCcw,
   Sparkles,
   Info,
-  Check
+  Check,
+  Maximize2,
+  Minimize2,
+  X
 } from "lucide-react";
 import { DienteSVG } from "./diente-svg";
 import { DIAGNOSTICOS_CONFIG, PROCEDIMIENTOS_CONFIG } from "./odontograma-config";
+import { createPortal } from "react-dom";
 
 // =========================================================================
 // TIPOS EXPORTADOS
@@ -115,6 +119,13 @@ const DIENTES_NINO_SUP_DER = [61, 62, 63, 64, 65];
 const DIENTES_NINO_INF_IZQ = [85, 84, 83, 82, 81];
 const DIENTES_NINO_INF_DER = [71, 72, 73, 74, 75];
 
+const getToothType = (numero: number) => {
+  const digit = numero % 10;
+  if ([8, 7, 6].includes(digit)) return "molar";
+  if ([5, 4].includes(digit)) return "premolar";
+  return "incisivo"; // 3, 2, 1 son incisivos/caninos
+};
+
 export const Odontograma: React.FC<OdontogramaProps> = ({
   initialState = {},
   onChange,
@@ -146,14 +157,12 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
   const [selectedDienteNum, setSelectedDienteNum] = useState<number | null>(null);
   const [vista, setVista] = useState<"todos" | "adulto" | "infantil">("todos");
 
-  // Ajustar la vista si se fuerza externamente (por edad)
+  // Estados de pantalla completa
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
-    if (forceVista) {
-      setTimeout(() => {
-        setVista(forceVista);
-      }, 0);
-    }
-  }, [forceVista]);
+    setIsMounted(true);
+  }, []);
 
   // Sincronizar reactivamente cuando el estado inicial cambia
   useEffect(() => {
@@ -381,15 +390,14 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
 
   const dienteSeleccionado = selectedDienteNum !== null ? dientes[selectedDienteNum] : null;
 
-  return (
-    <div className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl p-6 shadow-xl space-y-6 select-none transition-colors">
-      
+  const innerContent = (
+    <>
       {/* Cabecera y Controles */}
       {!hideHeader && (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
           <div>
             <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <Activity className="h-6 w-6 text-teal-650 dark:text-emerald-450" />
+              <Activity className="h-6 w-6 text-emerald-655 dark:text-emerald-450" />
               {mode === "diagnostic" 
                 ? "Odontograma Diagnóstico Inicial (Ingreso)" 
                 : mode === "final" 
@@ -407,56 +415,31 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
 
           {/* Botones de acción */}
           <div className="flex flex-wrap gap-2 w-full sm:w-auto items-center">
-            {/* Selector de Dentición (Sólo se muestra si no está forzado por edad) */}
-            {!forceVista && (
-              <div className="bg-slate-150/60 dark:bg-slate-800 p-0.5 rounded-xl flex gap-1 text-[11px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setVista("todos")}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    vista === "todos" 
-                      ? "bg-white dark:bg-slate-900 text-teal-655 dark:text-emerald-455 shadow-sm" 
-                      : "text-slate-500 hover:text-slate-850"
-                  }`}
-                >
-                  Completo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVista("adulto")}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    vista === "adulto" 
-                      ? "bg-white dark:bg-slate-900 text-teal-655 dark:text-emerald-455 shadow-sm" 
-                      : "text-slate-500 hover:text-slate-850"
-                  }`}
-                >
-                  Adultos
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVista("infantil")}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    vista === "infantil" 
-                      ? "bg-white dark:bg-slate-900 text-teal-655 dark:text-emerald-455 shadow-sm" 
-                      : "text-slate-500 hover:text-slate-850"
-                  }`}
-                >
-                  Infantil
-                </button>
-              </div>
-            )}
-
-            {forceVista && (
-              <span className="text-[10px] font-extrabold uppercase px-3 py-1.5 bg-slate-100 dark:bg-slate-900 text-slate-500 border border-slate-200 dark:border-slate-800 rounded-xl">
-                Vista: {forceVista === "adulto" ? "Adultos (Dentición Permanente)" : "Infantil (Dentición Temporal)"}
-              </span>
-            )}
+            {/* Botón de Pantalla Completa */}
+            <button
+              type="button"
+              onClick={() => setIsMaximized(!isMaximized)}
+              className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title={isMaximized ? "Salir de pantalla completa" : "Pantalla completa"}
+            >
+              {isMaximized ? (
+                <>
+                  <Minimize2 className="h-4 w-4 text-emerald-600 dark:text-emerald-455" />
+                  <span>Reducir</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="h-4 w-4 text-emerald-650 dark:text-emerald-455" />
+                  <span>Ampliar</span>
+                </>
+              )}
+            </button>
 
             {!readOnly && mode === "diagnostic" && (
               <button
                 type="button"
                 onClick={limpiarTodoElOdontograma}
-                className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-500 hover:text-red-500 transition-colors"
+                className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
                 title="Limpiar todo el odontograma"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -533,47 +516,48 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
         )}
       </div>
 
-      {/* MODAL CONFIGURACIÓN DIAGNÓSTICO PIEZA (MODO DIAGNÓSTICO) */}
-      {dienteSeleccionado && mode === "diagnostic" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-[scaleUp_0.18s_ease-out]">
+      {/* Panel de edición de pieza dental seleccionada */}
+      {dienteSeleccionado && !readOnly && (
+        <div className="fixed inset-0 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             
-            {/* Header */}
-            <div className="bg-gradient-to-r from-teal-800 to-emerald-800 px-6 py-4 text-white flex justify-between items-center">
+            {/* Header del modal */}
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <div>
-                <h3 className="text-md font-bold flex items-center gap-1.5">
-                  <Sparkles className="h-4.5 w-4.5 text-amber-300" />
-                  Diagnóstico Inicial de Pieza Dental
+                <h3 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5 text-sm uppercase">
+                  Pieza Dental {dienteSeleccionado.numero} ({getToothType(dienteSeleccionado.numero)})
                 </h3>
-                <p className="text-xs text-teal-100">Diente número: #{dienteSeleccionado.numero}</p>
+                <p className="text-[10px] text-slate-500">Configuración clínica detallada de la pieza</p>
               </div>
               <button 
+                type="button"
                 onClick={() => setSelectedDienteNum(null)}
-                className="bg-white/10 hover:bg-white/20 text-white rounded-full p-1.5 text-xs font-bold transition-colors"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors cursor-pointer"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Contenido */}
-            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+            {/* Cuerpo del modal */}
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               
-              {/* Vista previa SVG */}
-              <div className="flex flex-col items-center justify-center py-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850/85">
+              {/* Sección de caras del diente */}
+              <div className="flex flex-col items-center p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850">
+                <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Visualización y Caras Individuales</span>
                 <DienteSVG
                   diente={dienteSeleccionado}
                   isSelected={false}
                   onSelect={() => {}}
                   onFaceClick={(face) => handleFaceClick(dienteSeleccionado.numero, face)}
-                  readOnly={false}
-                  mode="diagnostic"
+                  readOnly={readOnly}
+                  mode={mode}
                 />
                 <span className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-wider">
                   Haz clic en las caras del diente arriba para caries/curados individuales
                 </span>
               </div>
 
-              {/* Selector de patologías / variables */}
+              {/* Variables de Diagnóstico Inicial */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-1.5 border-slate-100 dark:border-slate-800">
                   Variables de Diagnóstico Inicial
@@ -585,7 +569,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleDiagnosticoBool("fractura")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       dienteSeleccionado.diagnosticos?.fractura
                         ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-600"
                         : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
@@ -599,7 +583,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleDiagnosticoBool("remanente")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       dienteSeleccionado.diagnosticos?.remanente
                         ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-650"
                         : "bg-slate-50 dark:bg-slate-855 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
@@ -613,7 +597,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleDiagnosticoBool("diastema")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       dienteSeleccionado.diagnosticos?.diastema
                         ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
                         : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 hover:bg-slate-100"
@@ -627,7 +611,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleDiagnosticoBool("edentulo")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       dienteSeleccionado.diagnosticos?.edentulo
                         ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
                         : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
@@ -641,7 +625,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleDiagnosticoBool("macrodoncia")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       dienteSeleccionado.diagnosticos?.macrodoncia
                         ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
                         : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
@@ -655,7 +639,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleDiagnosticoBool("microdoncia")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       dienteSeleccionado.diagnosticos?.microdoncia
                         ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
                         : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
@@ -669,7 +653,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={() => toggleDiagnosticoBool("movilidad")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                       dienteSeleccionado.diagnosticos?.movilidad
                         ? "bg-orange-50 dark:bg-orange-950/20 border-orange-500 text-orange-600"
                         : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
@@ -691,10 +675,10 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("giroversion", dienteSeleccionado.diagnosticos?.giroversion === "izquierda" ? undefined : "izquierda")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.giroversion === "izquierda"
                             ? "bg-sky-500 border-sky-600 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-650"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-655"
                         }`}
                       >
                         Izquierda ↺
@@ -702,10 +686,10 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("giroversion", dienteSeleccionado.diagnosticos?.giroversion === "derecha" ? undefined : "derecha")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.giroversion === "derecha"
                             ? "bg-sky-500 border-sky-600 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-650"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-655"
                         }`}
                       >
                         Derecha ↻
@@ -714,13 +698,13 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   </div>
 
                   {/* Incrustación */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-855 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
                     <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Incrustación (Buen/Mal estado)</div>
                     <div className="flex gap-1 w-full sm:w-auto">
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("incrustacion", dienteSeleccionado.diagnosticos?.incrustacion === "bueno" ? undefined : "bueno")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.incrustacion === "bueno"
                             ? "bg-blue-600 border-blue-700 text-white"
                             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
@@ -731,7 +715,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("incrustacion", dienteSeleccionado.diagnosticos?.incrustacion === "malo" ? undefined : "malo")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.incrustacion === "malo"
                             ? "bg-red-500 border-red-655 text-white"
                             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
@@ -742,13 +726,13 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-855 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
                     <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Incrustación Estética (IE)</div>
                     <div className="flex gap-1 w-full sm:w-auto">
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("incrustacion_estetica", dienteSeleccionado.diagnosticos?.incrustacion_estetica === "bueno" ? undefined : "bueno")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.incrustacion_estetica === "bueno"
                             ? "bg-blue-600 border-blue-700 text-white"
                             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
@@ -759,7 +743,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("incrustacion_estetica", dienteSeleccionado.diagnosticos?.incrustacion_estetica === "malo" ? undefined : "malo")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.incrustacion_estetica === "malo"
                             ? "bg-red-500 border-red-650 text-white"
                             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
@@ -770,13 +754,13 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-855 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
                     <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Endodoncia previa (Ingreso)</div>
                     <div className="flex gap-1 w-full sm:w-auto">
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("endodoncia_inicial", dienteSeleccionado.diagnosticos?.endodoncia_inicial === "bueno" ? undefined : "bueno")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.endodoncia_inicial === "bueno"
                             ? "bg-blue-600 border-blue-700 text-white"
                             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
@@ -787,9 +771,9 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                       <button
                         type="button"
                         onClick={() => setDiagnosticoVal("endodoncia_inicial", dienteSeleccionado.diagnosticos?.endodoncia_inicial === "malo" ? undefined : "malo")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto ${
+                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
                           dienteSeleccionado.diagnosticos?.endodoncia_inicial === "malo"
-                            ? "bg-red-500 border-red-650 text-white"
+                            ? "bg-red-500 border-red-655 text-white"
                             : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
                         }`}
                       >
@@ -805,7 +789,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   <button
                     type="button"
                     onClick={resetearDiente}
-                    className="px-4 py-2 text-xs font-bold bg-red-50 dark:bg-red-950/20 text-red-600 border border-red-200 dark:border-red-900/30 rounded-xl hover:bg-red-100 transition-colors"
+                    className="px-4 py-2 text-xs font-bold bg-red-50 dark:bg-red-950/20 text-red-600 border border-red-200 dark:border-red-900/30 rounded-xl hover:bg-red-100 transition-colors cursor-pointer"
                   >
                     Restaurar Pieza Sana
                   </button>
@@ -820,7 +804,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedDienteNum(null)}
-                className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md transition-all hover:scale-[1.02]"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition-all hover:scale-[1.02] cursor-pointer"
               >
                 Listo / Confirmar
               </button>
@@ -829,7 +813,31 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
           </div>
         </div>
       )}
+    </>
+  );
 
+  if (isMaximized && isMounted) {
+    return createPortal(
+      <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+        <div className="w-full max-w-7xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl p-6 shadow-2xl space-y-6 select-none transition-colors overflow-y-auto max-h-[95vh] relative">
+          <button
+            type="button"
+            onClick={() => setIsMaximized(false)}
+            className="absolute right-6 top-6 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-750 transition-colors z-[1000] cursor-pointer"
+            title="Cerrar pantalla completa"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {innerContent}
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
+  return (
+    <div className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl p-6 shadow-xl space-y-6 select-none transition-colors">
+      {innerContent}
     </div>
   );
 };

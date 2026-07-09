@@ -70,10 +70,6 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
       alert("Por favor ingresa el nombre completo del paciente.");
       return;
     }
-    if (!formData.dni.trim()) {
-      alert("Por favor ingresa el DNI o Documento de Identidad.");
-      return;
-    }
     onSubmit(formData);
   };
 
@@ -111,14 +107,13 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
 
           {/* DNI */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DNI / Pasaporte *</label>
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">DNI / Pasaporte</label>
             <input
               type="text"
               name="dni"
               value={formData.dni}
               onChange={handleChange}
               placeholder="Documento de Identidad"
-              required
               className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-3 px-4 text-sm font-semibold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10 transition-all"
             />
           </div>
@@ -327,7 +322,7 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
         )}
         <button
           type="submit"
-          className="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-teal-500/10 hover:shadow-teal-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+          className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all hover:scale-[1.02] cursor-pointer"
         >
           Guardar Historia Clínica
         </button>

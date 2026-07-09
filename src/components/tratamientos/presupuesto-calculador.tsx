@@ -221,7 +221,12 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
               <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Procedimiento Clínico</label>
               <select
                 value={nuevoProcId}
-                onChange={(e) => setNuevoProcId(e.target.value)}
+                onChange={(e) => {
+                  setNuevoProcId(e.target.value);
+                  if (onActiveSelectedTeethChange) {
+                    onActiveSelectedTeethChange([]);
+                  }
+                }}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none"
               >
                 <option value="">-- Seleccione un procedimiento --</option>
@@ -297,7 +302,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
             <button
               type="submit"
               disabled={!nuevoProcId}
-              className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-slate-200 disabled:dark:bg-slate-800 disabled:text-slate-400 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer hover:scale-[1.01]"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:dark:bg-slate-800 disabled:text-slate-400 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1 cursor-pointer hover:scale-[1.01]"
             >
               <Plus className="h-4 w-4" /> Agregar Item
             </button>
@@ -441,7 +446,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
           type="button"
           onClick={handleGuardarPresupuesto}
           disabled={selectedProcedures.length === 0}
-          className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-200 disabled:dark:bg-slate-800 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
+          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:dark:bg-slate-800 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer"
         >
           Guardar Tratamiento y Costos
         </button>

@@ -41,3 +41,35 @@ Este archivo contiene el historial de cambios y avances realizados en el proyect
 *   **Cierre Automático en Navegación:** Al seleccionar cualquier opción de navegación en el sidebar, este se auto-colapsa de inmediato para optimizar el espacio de trabajo en pantalla.
 *   **Cuadrícula de Inicio Fluida:** El grid de la página principal ahora permite visualizar las tarjetas y listas en 2 columnas paralelas en tabletas de forma balanceada (`md:grid-cols-3` y `md:col-span-2`), en lugar de colapsar forzosamente a una columna vertical simple como en celulares.
 
+
+## Avances del Día (09/07/2026)
+
+### 1. Flexibilidad en Datos del Paciente (DNI Opcional y Corrección de Claves Duplicadas)
+*   **DNI Opcional:** Se eliminó la validación Javascript y el atributo HTML `required` del campo de DNI / Pasaporte en el formulario de registro de paciente ([historia-clinica-form.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/pacientes/historia-clinica-form.tsx)), permitiendo guardar historias clínicas sin obligar a registrar un documento.
+*   **Tratamiento de Nulos contra Unicidad:** Para prevenir que múltiples pacientes sin DNI colisionaran en Supabase arrojando un error de clave duplicada (`pacientes_dni_key` UNIQUE constraint), se implementó una limpieza en `handleCreatePaciente` y `handleUpdateHistory` en [page.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/app/page.tsx) para transformar cualquier cadena de DNI vacía o con espacios en `null` antes de enviarla a la base de datos.
+*   **Corrección de Sesiones Clínicas:** Esto solucionó un error por el cual la creación de pacientes y la proforma fallaban en Supabase (cayendo silenciosamente al localStorage local con IDs temporales) y provocaba que las sesiones de evolución no se reflejaran correctamente en el panel de control de sesiones al recargar.
+
+### 2. Edición Inline e Impresión de Saldos Independientes
+*   **Edición Directa en Fila:** Se agregaron estados reactivos para edición inline (`editingSaldoId`, `editingSaldoFecha`, `editingSaldoProcedimiento`, `editingSaldoMonto`) en la tabla de saldos independientes dentro de la ficha de paciente. Ahora, las filas se transforman en inputs editables permitiendo corregir conceptos, montos o fechas, persistiendo los datos de inmediato en Supabase (y en `localStorage` como respaldo).
+*   **Impresión de Reporte de Saldos:** Se agregó un botón de **Imprimir Reporte** en la cabecera del registro de saldos. Este genera un formato de impresión HTML estilizado y elegante con membrete del consultorio, datos filiatorios del paciente (Nombre, DNI, teléfono), fecha de reporte, tabla detallada de saldos independientes, suma totalizada de saldo pendiente y área de firma/sello clínico, disparando la ventana de impresión nativa y auto-cerrándose tras finalizar.
+
+### 3. Antecedentes Médicos Dinámicos y Resaltado de Alertas
+*   **Tarjetas de Alerta Roja:** Se estandarizó el diseño de los antecedentes médicos del expediente del paciente (Alergias, Enfermedades Sistémicas, Medicamentos Consumidos y Hemorragias) en [page.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/app/page.tsx).
+*   **Detección Inteligente de Anamnesis Positiva:** Mediante un validador dinámico, el sistema de detección revisa si el paciente registra alguna condición clínica real (ignorando textos vacíos o palabras clave como "ninguna", "ninguno", "no", "no presenta") y pinta la tarjeta del antecedente con bordes y fondo rojos translúcidos llamativos, manteniendo un tono gris sutil si el antecedente está libre de alertas.
+
+### 4. Odontograma Simultáneo (Adulto + Infantil) y Ampliación a Pantalla Completa
+*   **Visualización Paralela de Dentición:** Se modificó [odontograma.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/odontograma/odontograma.tsx) para omitir la reducción automática de arcadas basada en edad. Por defecto, ahora se muestran la arcada Permanente (Adulto) y Temporal (Niño) al mismo tiempo en el lienzo, ideal para pacientes con dentición mixta.
+*   **Modal Portalizado a Pantalla Completa:** Se implementó una función de maximización interactiva ("Ampliar") en todos los odontogramas de la aplicación. Al hacer clic, se proyecta el componente odontograma completo a través de un **React Portal** directo sobre el `document.body` dentro de un modal fixed con fondo translúcido desenfocado (`backdrop-blur-md`), asegurando máxima escala de trabajo y comodidad visual para el odontólogo.
+
+### 5. Corrección de Visualización de Estados Iniciales y Sellantes
+*   **Endodoncia de Ingreso Dibujada:** Se corrigió en [diente-svg.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/odontograma/diente-svg.tsx) el cálculo radicular para incluir `diag.endodoncia_inicial`, logrando que las endodoncias marcadas en el estado inicial de ingreso se dibujen visualmente en los conductos del diente. Las endodoncias calificadas como "buenas" se representan en azul, y las "malas" en rojo.
+*   **Macrodoncia y Microdoncia Reales:** Se implementaron clases de escala Tailwind dinámicas (`scale-110` / `scale-90`) en la anatomía del diente que agrandan o encogen el gráfico del diente en respuesta directa a si tiene marcada macrodoncia o microdoncia.
+*   **Inicial de Sellante "S":** Se incorporó el tratamiento de **Sellante** (`proc.sellante`) como inicial de texto `"S"` debajo de las piezas dentales en el odontograma de plan de tratamiento.
+
+### 6. Homogeneización Estética de Botones (Verde Esmeralda)
+*   **Estilo Premium Unificado:** Se reemplazó el color turquesa/azul de los botones de acción principal (como registrar paciente, guardar diagnóstico inicial, registrar sesión de evolución, imprimir y guardar proformas) por un color verde esmeralda premium (`bg-emerald-600 hover:bg-emerald-700 text-white`) con sombreados adaptativos, mejorando la coherencia visual con la identidad de marca de la clínica.
+
+### 7. Reset de Piezas al Cambiar Procedimiento en Proformas
+*   **Limpieza de Selección en Proformas:** Se modificó la selección de procedimientos en el calculador de proformas ([presupuesto-calculador.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/tratamientos/presupuesto-calculador.tsx)) para que, si el odontólogo cambia de procedimiento en el dropdown select, se limpien automáticamente las piezas dentales seleccionadas activamente, previniendo errores involuntarios al estructurar presupuestos compuestos.
+
+
