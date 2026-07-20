@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS tratamientos_paciente (
     fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     -- Estado completo del odontograma interactivo representado en JSONB.
-    -- Estructura sugerida: { "diente_18": { "ausente": false, "caras": { "V": "limpio", "O": "caries", "D": "curado" } }, ... }
+    -- Estructura sugerida por pieza dental: 
+    -- { "numero": 18, "ausente": false, "caras": { "V": "limpio", "O": "caries", "D": "curado" }, "diagnosticos": {}, "procedimientoMarkings": {}, "observacion": "Notas de observación clínica" }
     odontograma_estado JSONB NOT NULL DEFAULT '{}'::jsonb,
     
     -- Resumen financiero (Ficha de Costos - Foto 2)

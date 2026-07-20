@@ -99,4 +99,14 @@ Este archivo contiene el historial de cambios y avances realizados en el proyect
 *   **Auto-Aceptación de Presupuestos Activa:** Se integró la lógica en [page.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/app/page.tsx) para guardar de forma automatizada en estado "Aceptado" todo presupuesto que registre un pago/adelanto inicial mayor a `0` (`adelanto > 0`), agilizando el flujo de trabajo.
 *   **Alineación de Base de Datos:** Se actualizó [schema.sql](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/supabase/schema.sql) para reflejar los campos reales utilizados por el dashboard de pacientes y presupuestos.
 
+### 6. Ajustes Visuales del Odontograma y Observaciones de Pieza
+*   **Acoplamiento de Corona y Raíz:** Se rediseñó en [diente-svg.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/odontograma/diente-svg.tsx) el espaciado vertical (`gap-0`) y se alinearon los anchos (`w-[32px]`) y solapes para que la corona (cruz) y el dibujo anatómico del diente queden perfectamente juntos y alineados.
+*   **Observaciones Clínicas por Pieza:** Se integró un cuadro de observaciones en el modal de diagnóstico inicial de [odontograma.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/odontograma/odontograma.tsx), guardándose directamente de manera reactiva en el objeto JSONB de cada diente.
+*   **Representación Visual de Procedimientos y Diagnósticos:**
+    *   **Fractura:** Dibujada con una línea recta diagonal roja sólida cruzando toda la pieza.
+    *   **Radiografía (RX) y Remanente (RR):** Dibujados de manera superpuesta y recta en el centro de la pieza (sin invertirse en los superiores).
+    *   **Corona Metálica:** Se muestra con la inicial `"CM"` en un recuadro con borde arriba del diente.
+    *   **Endodoncia:** Línea sólida y gruesa (azul si es buen estado inicial, roja si es mal estado inicial o procedimiento).
+    *   **Abreviaturas unificadas:** Perno Muñón como `"PM"`, Carillas como `"C"`, Resinas como `"R"`. Se limitaron las etiquetas inferiores a mostrar únicamente la inicial del primer tratamiento activo para evitar sobrecarga textual.
+
 

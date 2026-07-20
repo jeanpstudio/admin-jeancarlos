@@ -98,12 +98,7 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
 
     const rootFill = "fill-slate-50 dark:fill-slate-900";
 
-    const isEndoBuena = 
-      proc.endodoncia_anterior === "buena" || 
-      proc.endodoncia_posterior === true || 
-      diag.endodoncia_inicial === "bueno";
-
-    const endoColor = isEndoBuena ? "#2563eb" : "#ef4444";
+    const endoColor = diag.endodoncia_inicial === "bueno" ? "#2563eb" : "#ef4444";
 
     // Cargar los trazados SVG desde la configuración configurable externa
     let toothPath = "";
@@ -125,39 +120,39 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
         if (type === "molar") {
           canals = (
             <>
-              <line x1="14" y1="20" x2="14" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="20" y1="10" x2="20" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="26" y1="16" x2="26" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="14" y1="20" x2="14" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
+              <line x1="20" y1="10" x2="20" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
+              <line x1="26" y1="16" x2="26" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
             </>
           );
         } else if (type === "premolar") {
           canals = (
             <>
-              <line x1="16" y1="13" x2="16" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="22" y1="13" x2="22" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="16" y1="13" x2="16" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
+              <line x1="22" y1="13" x2="22" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
             </>
           );
         } else {
-          canals = <line x1="20" y1="8" x2="20" y2="32" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />;
+          canals = <line x1="20" y1="8" x2="20" y2="32" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />;
         }
       } else {
         if (type === "molar") {
           canals = (
             <>
-              <line x1="14" y1="18" x2="14" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="20" y1="18" x2="20" y2="38" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="26" y1="18" x2="26" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="14" y1="18" x2="14" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
+              <line x1="20" y1="18" x2="20" y2="38" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
+              <line x1="26" y1="18" x2="26" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
             </>
           );
         } else if (type === "premolar") {
           canals = (
             <>
-              <line x1="16" y1="16" x2="16" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
-              <line x1="22" y1="16" x2="22" y2="35" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />
+              <line x1="16" y1="16" x2="16" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
+              <line x1="22" y1="16" x2="22" y2="35" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />
             </>
           );
         } else {
-          canals = <line x1="20" y1="18" x2="20" y2="38" stroke={endoColor} strokeWidth="1.5" strokeDasharray="1.5,1.5" />;
+          canals = <line x1="20" y1="18" x2="20" y2="38" stroke={endoColor} strokeWidth="3.2" strokeLinecap="round" />;
         }
       }
     }
@@ -169,8 +164,28 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
       scaleClass = " scale-90 origin-center transition-all duration-200";
     }
 
+    const overlayTexts: React.ReactNode[] = [];
+    if (diag.remanente) {
+      overlayTexts.push(
+        <g key="rr-text" transform={isUpper ? "translate(20, 26) scale(1, -1)" : "translate(20, 26)"}>
+          <text x="0" y="0" textAnchor="middle" dominantBaseline="middle" fill="#ef4444" fontSize="11" fontWeight="950" className="select-none pointer-events-none font-black">
+            RR
+          </text>
+        </g>
+      );
+    }
+    if (proc.rx) {
+      overlayTexts.push(
+        <g key="rx-text" transform={isUpper ? "translate(20, 26) scale(1, -1)" : "translate(20, 26)"}>
+          <text x="0" y="0" textAnchor="middle" dominantBaseline="middle" fill="#2563eb" fontSize="11" fontWeight="950" className="select-none pointer-events-none font-black">
+            RX
+          </text>
+        </g>
+      );
+    }
+
     return (
-      <svg viewBox="0 0 40 52" className={`w-9 h-12 overflow-visible select-none my-0.5 transform transition-all duration-200 ${scaleClass} ${isUpper ? "scale-y-[-1]" : ""}`}>
+      <svg viewBox="0 0 40 52" className={`w-[32px] h-[41.6px] overflow-visible select-none my-0 transform transition-all duration-200 ${scaleClass} ${isUpper ? "scale-y-[-1]" : ""}`}>
         {hasImplant ? (
           <g>
             {/* Corona del implante */}
@@ -209,13 +224,15 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
           </g>
         )}
 
-        {/* Fractura Zigzag Line */}
+        {/* Fractura Straight Diagonal Line */}
         {diag.fractura && (
-          <path
-            d={isUpper ? "M 7,38 L 15,43 L 23,36 L 31,41" : "M 7,12 L 15,17 L 23,10 L 31,15"}
-            fill="none"
+          <line
+            x1="8"
+            y1="2"
+            x2="32"
+            y2="50"
             stroke="#ef4444"
-            strokeWidth="2.5"
+            strokeWidth="3.5"
             strokeLinecap="round"
           />
         )}
@@ -227,6 +244,9 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
             <path d="M 39,12 A 12,12 0 0,1 39,38" fill="none" stroke="#2563eb" strokeWidth="2.2" strokeLinecap="round" />
           </>
         )}
+
+        {/* Textos Superpuestos */}
+        {overlayTexts}
 
         {/* Edéntulo inicial o Extracción planificada (Gran aspa azul o roja) */}
         {(esEdentuloInicial || esExtraccionPlanificada) && (
@@ -308,7 +328,6 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
 
   // Colección de iniciales de diagnóstico a mostrar debajo
   const initialsList: string[] = [];
-  if (diag.remanente) initialsList.push("RR");
   if (diag.macrodoncia) initialsList.push("MAC");
   if (diag.microdoncia) initialsList.push("MIC");
   if (diag.incrustacion) initialsList.push("IM");
@@ -316,27 +335,32 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
   if (diag.movilidad) initialsList.push("M1");
 
   if (mode !== "diagnostic") {
-    if (proc.curacion_simple) initialsList.push("PT");
-    if (proc.curacion_compuesta) initialsList.push("CC");
-    if (proc.reconstruccion_coronaria) initialsList.push("RC");
-    if (proc.extraccion_compleja) initialsList.push("EC");
-    if (proc.cirugia_3m) initialsList.push("3M");
-    if (proc.endodoncia_anterior) initialsList.push("EA");
-    if (proc.endodoncia_posterior) initialsList.push("EP");
-    if (proc.corona_porcelana) initialsList.push("CP");
-    if (proc.corona_circonio) initialsList.push("CC");
-    if (proc.corona_ceramica) initialsList.push("CC");
-    if (proc.corona_venner_ceramico) initialsList.push("CVC");
-    if (proc.corona_venner_ivocrom) initialsList.push("CVI");
-    if (proc.perno_munon) initialsList.push("Pm");
-    if (proc.perno_fibra_vidrio) initialsList.push("Pv");
-    if (proc.perno_circonio) initialsList.push("Pc");
-    if (proc.pulpotomia) initialsList.push("PT");
-    if (proc.pulpectomia) initialsList.push("PC");
-    if (proc.implante) initialsList.push("IMP");
-    if (proc.amalgama) initialsList.push("AM");
-    if (proc.resina) initialsList.push("R");
-    if (proc.sellante) initialsList.push("S");
+    const procInitials: string[] = [];
+    if (proc.curacion_simple) procInitials.push("PT");
+    if (proc.curacion_compuesta) procInitials.push("CC");
+    if (proc.reconstruccion_coronaria) procInitials.push("RC");
+    if (proc.extraccion_compleja) procInitials.push("EC");
+    if (proc.cirugia_3m) procInitials.push("3M");
+    if (proc.endodoncia_anterior) procInitials.push("EA");
+    if (proc.endodoncia_posterior) procInitials.push("EP");
+    if (proc.corona_porcelana) procInitials.push("CP");
+    if (proc.corona_circonio) procInitials.push("CC");
+    if (proc.corona_ceramica) procInitials.push("CC");
+    if (proc.corona_venner_ceramico) procInitials.push("CVC");
+    if (proc.corona_venner_ivocrom) procInitials.push("CVI");
+    if (proc.perno_munon) procInitials.push("PM");
+    if (proc.perno_fibra_vidrio) procInitials.push("Pv");
+    if (proc.perno_circonio) procInitials.push("Pc");
+    if (proc.pulpotomia) procInitials.push("PT");
+    if (proc.pulpectomia) procInitials.push("PC");
+    if (proc.amalgama) procInitials.push("AM");
+    if (proc.resina) procInitials.push("R");
+    if (proc.sellante) procInitials.push("S");
+    if (proc.carillas) procInitials.push("C");
+
+    if (procInitials.length > 0) {
+      initialsList.push(procInitials[0]);
+    }
   }
 
   return (
@@ -356,9 +380,16 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
       )}
 
       {/* 2. Cuerpo del diente (Corona/Cruz siempre arriba, Raíz/Dibujo siempre abajo) */}
-      <div className="flex flex-col items-center gap-1 w-10 select-none">
+      <div className="flex flex-col items-center gap-0 w-[32px] select-none relative">
+        {proc.corona_metalica && (
+          <div className="absolute -top-3.5 bg-white dark:bg-slate-900 border border-slate-450 dark:border-slate-500 rounded px-0.5 text-[8px] font-black leading-none text-slate-800 dark:text-slate-200 z-10 shadow-sm">
+            CM
+          </div>
+        )}
         {renderInteractiveCross()}
-        {renderAnatomicalTooth()}
+        <div className="-mt-[1px]">
+          {renderAnatomicalTooth()}
+        </div>
       </div>
 
       {/* 3. Número del diente inferior */}
@@ -383,7 +414,7 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
               initial === "IE" && diag.incrustacion_estetica === "malo" ? "text-red-600 bg-red-50 dark:bg-red-950/20" :
               initial === "AM" && proc.amalgama === "malo" ? "text-red-600 bg-red-50 dark:bg-red-950/20" :
               initial === "R" && proc.resina === "malo" ? "text-red-600 bg-red-50 dark:bg-red-950/20" :
-              ["IM", "IE", "AM", "R", "MAC", "MIC", "ED", "S"].includes(initial) ? "text-blue-600 bg-blue-50 dark:bg-blue-950/20" :
+              ["IM", "IE", "AM", "R", "MAC", "MIC", "ED", "S", "C", "PM", "Pv", "Pc", "PT", "PC"].includes(initial) ? "text-blue-600 bg-blue-50 dark:bg-blue-950/20" :
               "text-red-500 bg-red-50 dark:bg-red-950/20"
             }`}
           >

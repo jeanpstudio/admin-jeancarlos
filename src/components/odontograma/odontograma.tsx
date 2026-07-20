@@ -75,7 +75,11 @@ export interface ToothState {
     implante?: boolean;
     amalgama?: "bueno" | "malo";
     resina?: "bueno" | "malo";
+    rx?: boolean;
+    corona_metalica?: boolean;
+    carillas?: boolean;
   };
+  observacion?: string;
 }
 
 export type OdontogramaState = Record<number, ToothState>;
@@ -351,10 +355,12 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
             else if (nombre === "Sellante") pm.sellante = true;
             else if (nombre === "Cemento provisional") pm.cemento_provisional = true;
             else if (nombre === "Cemento fijo") pm.cemento_fijo = true;
-            else if (nombre.startsWith("Carillas de circonio")) pm.implante = true; // mapped to initials
+            else if (nombre.startsWith("Carillas")) pm.carillas = true;
             else if (nombre === "Implante") pm.implante = true;
             else if (nombre === "Amalgama") pm.amalgama = procItem.notas?.toLowerCase().includes("mal") ? "malo" : "bueno";
             else if (nombre === "Resina") pm.resina = procItem.notas?.toLowerCase().includes("mal") ? "malo" : "bueno";
+            else if (nombre === "Rx" || nombre.toLowerCase().includes("radiografía")) pm.rx = true;
+            else if (nombre.toLowerCase().includes("corona de metal") || nombre.toLowerCase().includes("corona metal")) pm.corona_metalica = true;
           }
         });
       });
@@ -752,6 +758,27 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                       ))}
                     </div>
                   )}
+                </div>
+ 
+                {/* Cuadrito de Observación de la Pieza */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <label className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Observaciones Clínicas de la Pieza</label>
+                  <textarea
+                    rows={2}
+                    value={dienteSeleccionado?.observacion || ""}
+                    onChange={(e) => {
+                      if (selectedDienteNum !== null) {
+                        const nuevoEstado = { ...dientes };
+                        nuevoEstado[selectedDienteNum] = {
+                          ...nuevoEstado[selectedDienteNum],
+                          observacion: e.target.value
+                        };
+                        notificarCambio(nuevoEstado);
+                      }
+                    }}
+                    placeholder="Ingrese notas u observaciones específicas para este diente..."
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10 transition-all resize-none"
+                  />
                 </div>
 
                 {/* Botón de Restaurar Pieza Sana (MANTENIDO) */}
