@@ -136,6 +136,7 @@ export default function HomeSPA() {
   const [nuevaSesionPago, setNuevaSesionPago] = useState<number>(0);
   const [nuevaSesionDoctor, setNuevaSesionDoctor] = useState<string>("Jean Carlos Zúñiga");
   const [nuevaSesionPiezas, setNuevaSesionPiezas] = useState<string[]>([]);
+  const [nuevaSesionFecha, setNuevaSesionFecha] = useState<string>(() => new Date().toISOString().substring(0, 10));
 
   // Conexión Supabase
   const supabase = createClient();
@@ -654,7 +655,7 @@ export default function HomeSPA() {
     const nuevoPaciente: PacienteData = {
       ...data,
       id: Math.random().toString(36).substring(2, 9),
-      fecha_registro: new Date().toISOString(),
+      fecha_registro: data.fecha_registro || new Date().toISOString(),
     };
     const nuevoListado = [nuevoPaciente, ...pacientes];
     setPacientes(nuevoListado);
@@ -771,8 +772,13 @@ export default function HomeSPA() {
     total: number;
     adelanto: number;
     saldo: number;
+    fecha?: string;
   }) => {
     if (!selectedPacienteId) return;
+
+    const autoAceptado = costos.adelanto > 0;
+    const estadoInicial = autoAceptado ? "presupuesto_aceptado" : "presupuesto_pendiente";
+    const fechaPresupuesto = costos.fecha || new Date().toISOString();
 
     try {
       const { data: newTr, error } = await supabase
@@ -782,8 +788,9 @@ export default function HomeSPA() {
           odontograma_estado: odontogramaInicial, // Tomar estado inicial como base de la cabecera
           total_costo: costos.total,
           adelanto: costos.adelanto,
-          estado: "presupuesto_pendiente",
-          sesiones: []
+          estado: estadoInicial,
+          sesiones: [],
+          fecha: fechaPresupuesto
         }])
         .select()
         .single();
@@ -808,7 +815,7 @@ export default function HomeSPA() {
 
         await fetchTratamientos(selectedPacienteId);
         await fetchConsultasHoy();
-        alert("¡Presupuesto guardado en estado PENDIENTE!");
+        alert(autoAceptado ? "¡Presupuesto guardado y ACEPTADO automáticamente por adelanto!" : "¡Presupuesto guardado en estado PENDIENTE!");
         setActivePlanProcedures([]);
         setActiveProcedureName(null);
         setActiveSelectedTeeth([]);
@@ -825,23 +832,28 @@ export default function HomeSPA() {
     total: number;
     adelanto: number;
     saldo: number;
+    fecha?: string;
   }) => {
+    const autoAceptado = costos.adelanto > 0;
+    const estadoInicial = autoAceptado ? "presupuesto_aceptado" : "presupuesto_pendiente";
+    const fechaPresupuesto = costos.fecha || new Date().toISOString();
+
     const nuevaSesion: TreatmentSession = {
       id: Math.random().toString(36).substring(2, 9),
-      fecha: new Date().toISOString(),
+      fecha: fechaPresupuesto,
       odontograma_estado: odontogramaInicial,
       procedimientos: [...costos.procedimientos],
       total: costos.total,
       adelanto: costos.adelanto,
       saldo: costos.saldo,
-      estado: "presupuesto_pendiente",
+      estado: estadoInicial,
       sesiones: []
     };
 
     const nuevosTratamientos = [nuevaSesion, ...tratamientos];
     setTratamientos(nuevosTratamientos);
     localStorage.setItem(`clinica_dental_zuniga_tratamientos_${selectedPacienteId}`, JSON.stringify(nuevosTratamientos));
-    alert("¡Presupuesto guardado localmente (Offline)!");
+    alert(autoAceptado ? "¡Presupuesto guardado y ACEPTADO localmente (Offline)!" : "¡Presupuesto guardado localmente (Offline)!");
     setActivePlanProcedures([]);
     setActiveProcedureName(null);
     setActiveSelectedTeeth([]);
@@ -891,8 +903,12 @@ export default function HomeSPA() {
     const nuevoAdelanto = Number(tr.adelanto) + montoPago;
     const nuevoSaldo = Math.max(0, Number(tr.total) - nuevoAdelanto);
 
+    const fechaSesion = selectedPaciente?.es_antiguo && nuevaSesionFecha
+      ? new Date(nuevaSesionFecha + 'T' + new Date().toTimeString().split(' ')[0]).toISOString()
+      : new Date().toISOString();
+
     const nuevoLog: ClinicalSessionLog = {
-      fecha: new Date().toISOString(),
+      fecha: fechaSesion,
       nota: nuevaSesionNota,
       procedimientosTratados: [...nuevaSesionProcs],
       pago: montoPago,
@@ -933,6 +949,7 @@ export default function HomeSPA() {
         setNuevaSesionPago(0);
         setNuevaSesionDoctor("Jean Carlos Zúñiga");
         setNuevaSesionPiezas([]);
+        setNuevaSesionFecha(new Date().toISOString().substring(0, 10));
         alert("¡Sesión de trabajo registrada con éxito!");
       } else {
         addSessionLogLocalFallback(trId, nuevasSesiones, nuevoAdelanto, nuevoSaldo);
@@ -2317,6 +2334,7 @@ export default function HomeSPA() {
                       {!selectedTratamientoDetalle ? (
                         <PresupuestoCalculador
                           catalogo={catalogo}
+                          isOldPatient={selectedPaciente?.es_antiguo}
                           onSubmit={handleSaveTreatment}
                           activeSelectedTeeth={activeSelectedTeeth}
                           onActiveSelectedTeethChange={(teeth) => setActiveSelectedTeeth(teeth)}
@@ -2522,12 +2540,27 @@ export default function HomeSPA() {
                                   <select
                                     value={nuevaSesionDoctor}
                                     onChange={(e) => setNuevaSesionDoctor(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 focus:outline-none focus:border-teal-500 font-bold text-slate-700 dark:text-slate-300"
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 focus:outline-none focus:border-teal-500 font-bold text-slate-700 dark:text-slate-350"
                                   >
                                     <option value="Jean Carlos Zúñiga">Jean Carlos Zúñiga</option>
                                     <option value="Jean Frank Zúñiga">Jean Frank Zúñiga</option>
                                   </select>
                                 </div>
+
+                                {/* Fecha de la Sesión (Solo para pacientes antiguos) */}
+                                {selectedPaciente?.es_antiguo && (
+                                  <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Fecha de la Sesión *</label>
+                                    <input
+                                      type="date"
+                                      value={nuevaSesionFecha}
+                                      onChange={(e) => setNuevaSesionFecha(e.target.value)}
+                                      required
+                                      max={new Date().toISOString().substring(0, 10)}
+                                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 focus:outline-none focus:border-teal-500 font-bold text-slate-700 dark:text-slate-350"
+                                    />
+                                  </div>
+                                )}
 
                                 {/* Piezas Dentales Tratadas en esta Cita */}
                                 {(() => {

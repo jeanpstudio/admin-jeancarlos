@@ -170,7 +170,7 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
     }
 
     return (
-      <svg viewBox="0 0 40 52" className={`w-9 h-12 overflow-visible select-none my-0.5 transform${scaleClass}`}>
+      <svg viewBox="0 0 40 52" className={`w-9 h-12 overflow-visible select-none my-0.5 transform transition-all duration-200 ${scaleClass} ${isUpper ? "scale-y-[-1]" : ""}`}>
         {hasImplant ? (
           <g>
             {/* Corona del implante */}
@@ -355,21 +355,10 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
         </span>
       )}
 
-      {/* 2. Cuerpo del diente (Dibujo Anatómico + Selector de Caras) */}
-      <div className="flex flex-col items-center gap-1.5 w-10 select-none">
-        {isUpper ? (
-          <>
-            {/* Superior: Diente arriba, cruz interactiva abajo */}
-            {renderAnatomicalTooth()}
-            {renderInteractiveCross()}
-          </>
-        ) : (
-          <>
-            {/* Inferior: Cruz interactiva arriba, diente abajo */}
-            {renderInteractiveCross()}
-            {renderAnatomicalTooth()}
-          </>
-        )}
+      {/* 2. Cuerpo del diente (Corona/Cruz siempre arriba, Raíz/Dibujo siempre abajo) */}
+      <div className="flex flex-col items-center gap-1 w-10 select-none">
+        {renderInteractiveCross()}
+        {renderAnatomicalTooth()}
       </div>
 
       {/* 3. Número del diente inferior */}
@@ -380,21 +369,21 @@ export const DienteSVG: React.FC<DienteSVGProps> = ({
       )}
 
       {/* 4. Mini etiquetas de diagnóstico/procedimientos */}
-      <div className="flex flex-wrap gap-0.5 mt-1 min-h-[14px] items-center justify-center max-w-[70px]">
-        {diag.fractura && <span className="text-[7px] font-extrabold text-red-500 bg-red-50 dark:bg-red-950/20 px-0.5 rounded leading-none">FR</span>}
-        {diag.giroversion && <span className="text-[7px] font-extrabold text-sky-500 bg-sky-50 dark:bg-sky-950/20 px-0.5 rounded leading-none">GV</span>}
-        {diag.diastema && <span className="text-[7px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-0.5 rounded leading-none">DI</span>}
-        {esEdentuloInicial && <span className="text-[7px] font-extrabold text-blue-500 bg-blue-50 dark:bg-blue-950/20 px-0.5 rounded leading-none">AUS</span>}
-        {mode !== "diagnostic" && esExtraccionPlanificada && <span className="text-[7px] font-extrabold text-red-600 bg-red-50 dark:bg-red-950/20 px-0.5 rounded leading-none">EXT</span>}
+      <div className="flex flex-wrap gap-0.5 mt-1.5 min-h-[18px] items-center justify-center max-w-[80px]">
+        {diag.fractura && <span className="text-[10px] font-extrabold text-red-500 bg-red-50 dark:bg-red-950/20 px-0.5 rounded leading-none">FR</span>}
+        {diag.giroversion && <span className="text-[10px] font-extrabold text-sky-500 bg-sky-50 dark:bg-sky-950/20 px-0.5 rounded leading-none">GV</span>}
+        {diag.diastema && <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-0.5 rounded leading-none">DI</span>}
+        {esEdentuloInicial && <span className="text-[10px] font-extrabold text-blue-500 bg-blue-50 dark:bg-blue-950/20 px-0.5 rounded leading-none">AUS</span>}
+        {mode !== "diagnostic" && esExtraccionPlanificada && <span className="text-[10px] font-extrabold text-red-600 bg-red-50 dark:bg-red-950/20 px-0.5 rounded leading-none">EXT</span>}
         {initialsList.map((initial, idx) => (
           <span
             key={idx}
-            className={`text-[7px] font-extrabold px-0.5 rounded leading-none ${
-              initial === "IM" && diag.incrustacion === "malo" ? "text-red-655 bg-red-50 dark:bg-red-950/20" :
-              initial === "IE" && diag.incrustacion_estetica === "malo" ? "text-red-655 bg-red-50 dark:bg-red-950/20" :
-              initial === "AM" && proc.amalgama === "malo" ? "text-red-655 bg-red-50 dark:bg-red-950/20" :
-              initial === "R" && proc.resina === "malo" ? "text-red-655 bg-red-50 dark:bg-red-950/20" :
-              ["IM", "IE", "AM", "R", "MAC", "MIC", "ED", "S"].includes(initial) ? "text-blue-650 bg-blue-50 dark:bg-blue-950/20" :
+            className={`text-[10px] font-extrabold px-0.5 rounded leading-none ${
+              initial === "IM" && diag.incrustacion === "malo" ? "text-red-600 bg-red-50 dark:bg-red-950/20" :
+              initial === "IE" && diag.incrustacion_estetica === "malo" ? "text-red-600 bg-red-50 dark:bg-red-950/20" :
+              initial === "AM" && proc.amalgama === "malo" ? "text-red-600 bg-red-50 dark:bg-red-950/20" :
+              initial === "R" && proc.resina === "malo" ? "text-red-600 bg-red-50 dark:bg-red-950/20" :
+              ["IM", "IE", "AM", "R", "MAC", "MIC", "ED", "S"].includes(initial) ? "text-blue-600 bg-blue-50 dark:bg-blue-950/20" :
               "text-red-500 bg-red-50 dark:bg-red-950/20"
             }`}
           >

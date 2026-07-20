@@ -21,16 +21,17 @@ export interface SelectedProcedure {
   notas: string;
   costo_final: number;   // Costo total pactado para la línea
 }
-
 interface PresupuestoCalculadorProps {
   catalogo: CatalogProcedure[];
   initialProcedures?: SelectedProcedure[];
   initialAdelanto?: number;
+  isOldPatient?: boolean;
   onSubmit: (data: {
     procedimientos: SelectedProcedure[];
     total: number;
     adelanto: number;
     saldo: number;
+    fecha?: string;
   }) => void;
   onCancel?: () => void;
   activeSelectedTeeth?: number[];
@@ -44,6 +45,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
   catalogo,
   initialProcedures = [],
   initialAdelanto = 0,
+  isOldPatient = false,
   onSubmit,
   onCancel,
   activeSelectedTeeth = [],
@@ -57,6 +59,9 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
   
   // Variables locales del procedimiento en edición
   const [nuevoProcId, setNuevoProcId] = useState<string>("");
+  const [procSearchQuery, setProcSearchQuery] = useState("");
+  const [isProcDropdownOpen, setIsProcDropdownOpen] = useState(false);
+  const [fechaTratamiento, setFechaTratamiento] = useState<string>(() => new Date().toISOString().substring(0, 10));
   const [nuevoCostoUnitario, setNuevoCostoUnitario] = useState<number>(0);
   const [nuevoCostoTotal, setNuevoCostoTotal] = useState<number>(0);
   const [cantidad, setCantidad] = useState<number>(1);
@@ -76,7 +81,16 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
     }
   }, [selectedProcedures, onProceduresChange]);
 
-  // Notificar al padre cuando cambia el procedimiento seleccionado en el dropdown
+  // Sincronizar input de búsqueda con el procedimiento seleccionado
+  useEffect(() => {
+    if (selectedCatalogItem) {
+      setProcSearchQuery(selectedCatalogItem.nombre_procedimiento);
+    } else {
+      setProcSearchQuery("");
+    }
+  }, [nuevoProcId]);
+
+  // Notificar al padre cuando cambia el procedimiento seleccionado
   useEffect(() => {
     if (onActiveProcedureChange) {
       onActiveProcedureChange(selectedCatalogItem?.nombre_procedimiento || null);
@@ -87,7 +101,8 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
   useEffect(() => {
     if (selectedCatalogItem) {
       setTimeout(() => {
-        setNuevoCostoUnitario(selectedCatalogItem.costo_base);
+        // Remover costo base automático, por defecto s/. 0
+        setNuevoCostoUnitario(0);
         
         // Si el procedimiento NO requiere pieza ni cantidad (costo único)
         if (selectedConfig && !selectedConfig.requierePieza && !selectedConfig.requiereCantidad) {
@@ -132,11 +147,11 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
     setPiezasTexto(value);
     
     if (onActiveSelectedTeethChange) {
-      // Parsear texto (ej: "14, 15" -> [14, 15])
+      // Parsear texto de forma flexible (soporta comas, espacios, punto y coma)
       const parsedTeeth = value
-        .split(",")
+        .split(/[\s,;]+/)
         .map((s) => parseInt(s.trim()))
-        .filter((num) => !isNaN(num) && num >= 11 && num <= 85);
+        .filter((num) => !isNaN(num) && ((num >= 11 && num <= 48) || (num >= 51 && num <= 85)));
       onActiveSelectedTeethChange(parsedTeeth);
     }
   };
@@ -167,6 +182,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
     
     // Limpiar campos
     setNuevoProcId("");
+    setProcSearchQuery("");
     setNuevasNotas("");
     setCantidad(1);
     setPiezasTexto("");
@@ -196,6 +212,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
       total,
       adelanto,
       saldo,
+      fecha: isOldPatient ? fechaTratamiento : undefined
     });
   };
 
@@ -216,26 +233,68 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
 
         <form onSubmit={handleAgregarProcedimiento} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            {/* Selector de Procedimiento */}
-            <div className="md:col-span-2 space-y-1.5">
+            {/* Selector de Procedimiento como Autocompletado Dinámico */}
+            <div className="md:col-span-2 space-y-1.5 relative">
               <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Procedimiento Clínico</label>
-              <select
-                value={nuevoProcId}
-                onChange={(e) => {
-                  setNuevoProcId(e.target.value);
-                  if (onActiveSelectedTeethChange) {
-                    onActiveSelectedTeethChange([]);
-                  }
-                }}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none"
-              >
-                <option value="">-- Seleccione un procedimiento --</option>
-                {catalogo.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre_procedimiento} (Base: s/. {p.costo_base})
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Escriba para buscar procedimiento..."
+                  value={procSearchQuery}
+                  onChange={(e) => {
+                    setProcSearchQuery(e.target.value);
+                    setIsProcDropdownOpen(true);
+                    if (nuevoProcId) {
+                      setNuevoProcId("");
+                      if (onActiveSelectedTeethChange) onActiveSelectedTeethChange([]);
+                    }
+                  }}
+                  onFocus={() => setIsProcDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setIsProcDropdownOpen(false), 200)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none"
+                />
+                {procSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProcSearchQuery("");
+                      setNuevoProcId("");
+                      if (onActiveSelectedTeethChange) onActiveSelectedTeethChange([]);
+                    }}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-650 dark:hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Menú de Sugerencias Flotante */}
+              {isProcDropdownOpen && (
+                <div className="absolute left-0 right-0 top-[100%] mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl max-h-48 overflow-y-auto z-[100] shadow-xl divide-y divide-slate-100 dark:divide-slate-850">
+                  {catalogo
+                    .filter((p) => p.nombre_procedimiento.toLowerCase().includes(procSearchQuery.toLowerCase()))
+                    .length === 0 ? (
+                      <p className="p-3 text-xs text-slate-400 text-center font-bold">No se encontraron procedimientos.</p>
+                    ) : (
+                      catalogo
+                        .filter((p) => p.nombre_procedimiento.toLowerCase().includes(procSearchQuery.toLowerCase()))
+                        .map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setNuevoProcId(p.id);
+                              setProcSearchQuery(p.nombre_procedimiento);
+                              setIsProcDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-emerald-950/20 hover:text-teal-600 dark:hover:text-emerald-450 transition-colors cursor-pointer"
+                          >
+                            {p.nombre_procedimiento}
+                          </button>
+                        ))
+                    )}
+                </div>
+              )}
             </div>
 
             {/* Dientes / Piezas (Sólo si requierePieza es true) */}
@@ -381,7 +440,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
             </div>
 
             {/* Balances */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-1 gap-3 ${isOldPatient ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
               
               {/* Total */}
               <div className="bg-teal-500/5 dark:bg-emerald-950/10 p-4 rounded-xl border border-teal-500/10 flex flex-col justify-between">
@@ -393,7 +452,7 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
               </div>
 
               {/* Adelanto */}
-              <div className="bg-slate-50 dark:bg-slate-850 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+              <div className="bg-slate-50 dark:bg-slate-855 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Adelanto Recibido</label>
                   <input
@@ -408,6 +467,22 @@ export const PresupuestoCalculador: React.FC<PresupuestoCalculadorProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Fecha de registro (Sólo para pacientes antiguos) */}
+              {isOldPatient && (
+                <div className="bg-slate-50 dark:bg-slate-850 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Fecha del Presupuesto</label>
+                    <input
+                      type="date"
+                      value={fechaTratamiento}
+                      onChange={(e) => setFechaTratamiento(e.target.value)}
+                      max={new Date().toISOString().substring(0, 10)}
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-sm font-extrabold text-slate-800 dark:text-slate-150 mt-1 focus:border-teal-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Saldo */}
               <div className={`p-4 rounded-xl border flex flex-col justify-between ${

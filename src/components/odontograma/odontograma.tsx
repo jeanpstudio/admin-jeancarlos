@@ -156,6 +156,136 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
 
   const [selectedDienteNum, setSelectedDienteNum] = useState<number | null>(null);
   const [vista, setVista] = useState<"todos" | "adulto" | "infantil">("todos");
+  const [diagnosticSearchQuery, setDiagnosticSearchQuery] = useState("");
+
+  useEffect(() => {
+    setDiagnosticSearchQuery("");
+  }, [selectedDienteNum]);
+
+  // Helper para listar los diagnósticos activos en un diente
+  const getActiveDiagnostics = (tooth: ToothState) => {
+    const active: { id: string; label: string; color: string; onRemove: () => void }[] = [];
+    const diag = tooth.diagnosticos || {};
+    
+    if (diag.fractura) {
+      active.push({
+        id: "fractura",
+        label: "Fractura",
+        color: "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-200 dark:border-red-900/30",
+        onRemove: () => toggleDiagnosticoBool("fractura")
+      });
+    }
+    if (diag.remanente) {
+      active.push({
+        id: "remanente",
+        label: "Remanente Radicular",
+        color: "bg-red-50 dark:bg-red-950/20 text-red-605 border-red-205 dark:border-red-900/30",
+        onRemove: () => toggleDiagnosticoBool("remanente")
+      });
+    }
+    if (diag.diastema) {
+      active.push({
+        id: "diastema",
+        label: "Diastema )(",
+        color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-900/30",
+        onRemove: () => toggleDiagnosticoBool("diastema")
+      });
+    }
+    if (diag.edentulo) {
+      active.push({
+        id: "edentulo",
+        label: "Edéntulo (Ausente)",
+        color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-900/30",
+        onRemove: () => toggleDiagnosticoBool("edentulo")
+      });
+    }
+    if (diag.macrodoncia) {
+      active.push({
+        id: "macrodoncia",
+        label: "Macrodoncia",
+        color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-900/30",
+        onRemove: () => toggleDiagnosticoBool("macrodoncia")
+      });
+    }
+    if (diag.microdoncia) {
+      active.push({
+        id: "microdoncia",
+        label: "Microdoncia",
+        color: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-900/30",
+        onRemove: () => toggleDiagnosticoBool("microdoncia")
+      });
+    }
+    if (diag.movilidad) {
+      active.push({
+        id: "movilidad",
+        label: "Movilidad",
+        color: "bg-orange-50 dark:bg-orange-950/20 text-orange-600 border-orange-200 dark:border-orange-900/30",
+        onRemove: () => toggleDiagnosticoBool("movilidad")
+      });
+    }
+    if (diag.giroversion) {
+      active.push({
+        id: "giroversion",
+        label: `Giroversión: ${diag.giroversion === "izquierda" ? "Izquierda" : "Derecha"}`,
+        color: "bg-sky-50 dark:bg-sky-950/20 text-sky-600 border-sky-200 dark:border-sky-900/30",
+        onRemove: () => setDiagnosticoVal("giroversion", undefined)
+      });
+    }
+    if (diag.incrustacion) {
+      active.push({
+        id: "incrustacion",
+        label: `Incrustación: ${diag.incrustacion === "bueno" ? "Buen Estado" : "Mal Estado"}`,
+        color: diag.incrustacion === "bueno"
+          ? "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-900/30"
+          : "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-200 dark:border-red-900/30",
+        onRemove: () => setDiagnosticoVal("incrustacion", undefined)
+      });
+    }
+    if (diag.incrustacion_estetica) {
+      active.push({
+        id: "incrustacion_estetica",
+        label: `Incrustación Estética: ${diag.incrustacion_estetica === "bueno" ? "Buen Estado" : "Mal Estado"}`,
+        color: diag.incrustacion_estetica === "bueno"
+          ? "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-900/30"
+          : "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-200 dark:border-red-900/30",
+        onRemove: () => setDiagnosticoVal("incrustacion_estetica", undefined)
+      });
+    }
+    if (diag.endodoncia_inicial) {
+      active.push({
+        id: "endodoncia_inicial",
+        label: `Endodoncia Previa: ${diag.endodoncia_inicial === "bueno" ? "Buena" : "Mala"}`,
+        color: diag.endodoncia_inicial === "bueno"
+          ? "bg-blue-50 dark:bg-blue-950/20 text-blue-600 border-blue-200 dark:border-blue-900/30"
+          : "bg-red-50 dark:bg-red-950/20 text-red-600 border-red-200 dark:border-red-900/30",
+        onRemove: () => setDiagnosticoVal("endodoncia_inicial", undefined)
+      });
+    }
+    
+    return active;
+  };
+
+  const optionsDeDiagnostico = [
+    { label: "Fractura", action: () => toggleDiagnosticoBool("fractura") },
+    { label: "Remanente Radicular (RR)", action: () => toggleDiagnosticoBool("remanente") },
+    { label: "Diastema )(", action: () => toggleDiagnosticoBool("diastema") },
+    { label: "Edéntulo (Diente Faltante / Ausente)", action: () => toggleDiagnosticoBool("edentulo") },
+    { label: "Macrodoncia", action: () => toggleDiagnosticoBool("macrodoncia") },
+    { label: "Microdoncia", action: () => toggleDiagnosticoBool("microdoncia") },
+    { label: "Movilidad (M1)", action: () => toggleDiagnosticoBool("movilidad") },
+    { label: "Giroversión Izquierda ↺", action: () => setDiagnosticoVal("giroversion", "izquierda") },
+    { label: "Giroversión Derecha ↻", action: () => setDiagnosticoVal("giroversion", "derecha") },
+    { label: "Incrustación - Buen Estado", action: () => setDiagnosticoVal("incrustacion", "bueno") },
+    { label: "Incrustación - Mal Estado", action: () => setDiagnosticoVal("incrustacion", "malo") },
+    { label: "Incrustación Estética - Buen Estado", action: () => setDiagnosticoVal("incrustacion_estetica", "bueno") },
+    { label: "Incrustación Estética - Mal Estado", action: () => setDiagnosticoVal("incrustacion_estetica", "malo") },
+    { label: "Endodoncia Previa (Ingreso) - Buena", action: () => setDiagnosticoVal("endodoncia_inicial", "bueno") },
+    { label: "Endodoncia Previa (Ingreso) - Mala", action: () => setDiagnosticoVal("endodoncia_inicial", "malo") },
+  ];
+
+  const filteredDiagnosticOptions = optionsDeDiagnostico.filter(opt =>
+    opt.label.toLowerCase().includes(diagnosticSearchQuery.toLowerCase())
+  );
 
   // Estados de pantalla completa
   const [isMaximized, setIsMaximized] = useState(false);
@@ -449,67 +579,59 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
         </div>
       )}
 
-      {/* Leyenda de Estados Clave */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 p-3 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-150 dark:border-slate-850 text-[10px] font-semibold text-slate-500">
-        <div className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded border bg-white dark:bg-slate-950"></span> Sano</div>
-        <div className="flex items-center gap-1.5 text-red-500"><span className="w-3.5 h-3.5 rounded border border-red-700 bg-red-500"></span> Caries</div>
-        <div className="flex items-center gap-1.5 text-blue-600"><span className="w-3.5 h-3.5 rounded border border-blue-600 bg-blue-500"></span> Curado</div>
-        <div className="flex items-center gap-1.5 text-red-600"><span className="w-3.5 h-3.5 font-bold text-center leading-none text-red-600">X</span> Extracción</div>
-        <div className="flex items-center gap-1.5 text-orange-600"><span className="w-3.5 h-3.5 rounded-full border-2 border-dashed border-orange-500"></span> Corona</div>
-        <div className="flex items-center gap-1.5 text-blue-500"><span className="w-3.5 h-3.5 font-bold text-center text-blue-600">)(</span> Diastema</div>
-      </div>
-
       {/* ARCADA DENTAL */}
       <div className="space-y-6">
-        {/* Dentición Adulto */}
+        {/* Fila 1: Adulto Superior (si aplica) */}
         {(vista === "todos" || vista === "adulto") && (
-          <div className="space-y-3">
-            <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Dentición Permanente (Adulto)</div>
-            
-            <div className="space-y-3">
-              {/* Fila Superior */}
-              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
-                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
-                  {renderFilaDientes(DIENTES_ADULTO_SUP_IZQ)}
-                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
-                  {renderFilaDientes(DIENTES_ADULTO_SUP_DER)}
-                </div>
-              </div>
-
-              {/* Fila Inferior */}
-              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
-                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
-                  {renderFilaDientes(DIENTES_ADULTO_INF_IZQ)}
-                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
-                  {renderFilaDientes(DIENTES_ADULTO_INF_DER)}
-                </div>
+          <div className="space-y-2">
+            <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Superior - Permanente (Adulto)</div>
+            <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+              <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                {renderFilaDientes(DIENTES_ADULTO_SUP_IZQ)}
+                <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
+                {renderFilaDientes(DIENTES_ADULTO_SUP_DER)}
               </div>
             </div>
           </div>
         )}
 
-        {/* Dentición Infantil */}
+        {/* Fila 2: Infantil Superior (si aplica) */}
         {(vista === "todos" || vista === "infantil") && (
-          <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-850">
-            <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Dentición Temporal (Infantil)</div>
-            
-            <div className="space-y-3">
-              {/* Fila Superior Infantil */}
-              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
-                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
-                  {renderFilaDientes(DIENTES_NINO_SUP_IZQ)}
-                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
-                  {renderFilaDientes(DIENTES_NINO_SUP_DER)}
-                </div>
+          <div className="space-y-2">
+            <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Superior - Temporal (Infantil)</div>
+            <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+              <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                {renderFilaDientes(DIENTES_NINO_SUP_IZQ)}
+                <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
+                {renderFilaDientes(DIENTES_NINO_SUP_DER)}
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* Fila Inferior Infantil */}
-              <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
-                <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
-                  {renderFilaDientes(DIENTES_NINO_INF_IZQ)}
-                  <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
-                  {renderFilaDientes(DIENTES_NINO_INF_DER)}
-                </div>
+        {/* Fila 3: Infantil Inferior (si aplica) */}
+        {(vista === "todos" || vista === "infantil") && (
+          <div className="space-y-2">
+            <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Inferior - Temporal (Infantil)</div>
+            <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+              <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                {renderFilaDientes(DIENTES_NINO_INF_IZQ)}
+                <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
+                {renderFilaDientes(DIENTES_NINO_INF_DER)}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fila 4: Adulto Inferior (si aplica) */}
+        {(vista === "todos" || vista === "adulto") && (
+          <div className="space-y-2">
+            <div className="text-center text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Inferior - Permanente (Adulto)</div>
+            <div className="overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-200">
+              <div className="flex flex-row gap-1 justify-start lg:justify-center items-center min-w-max bg-slate-50 dark:bg-slate-900/20 p-2 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-inner">
+                {renderFilaDientes(DIENTES_ADULTO_INF_IZQ)}
+                <div className="w-[1.5px] h-14 bg-teal-500/20 mx-1"></div>
+                {renderFilaDientes(DIENTES_ADULTO_INF_DER)}
               </div>
             </div>
           </div>
@@ -553,239 +675,87 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                   mode={mode}
                 />
                 <span className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-wider">
-                  Haz clic en las caras del diente arriba para caries/curados individuales
+                  Haz clic en las caras del diente arriba para caries/curados
                 </span>
               </div>
 
-              {/* Variables de Diagnóstico Inicial */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-1.5 border-slate-100 dark:border-slate-800">
-                  Variables de Diagnóstico Inicial
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  
-                  {/* Fractura */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDiagnosticoBool("fractura")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      dienteSeleccionado.diagnosticos?.fractura
-                        ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-600"
-                        : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>Fractura</span>
-                    {dienteSeleccionado.diagnosticos?.fractura && <Check className="h-4 w-4" />}
-                  </button>
-
-                  {/* Remanente Radicular */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDiagnosticoBool("remanente")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      dienteSeleccionado.diagnosticos?.remanente
-                        ? "bg-red-50 dark:bg-red-950/20 border-red-500 text-red-650"
-                        : "bg-slate-50 dark:bg-slate-855 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>Remanente Radicular (RR)</span>
-                    {dienteSeleccionado.diagnosticos?.remanente && <Check className="h-4 w-4" />}
-                  </button>
-
-                  {/* Diastema */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDiagnosticoBool("diastema")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      dienteSeleccionado.diagnosticos?.diastema
-                        ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
-                        : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-355 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>Diastema )(</span>
-                    {dienteSeleccionado.diagnosticos?.diastema && <Check className="h-4 w-4" />}
-                  </button>
-
-                  {/* Ausente / Edéntulo */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDiagnosticoBool("edentulo")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      dienteSeleccionado.diagnosticos?.edentulo
-                        ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
-                        : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>Edéntulo Total (Aspa Azul)</span>
-                    {dienteSeleccionado.diagnosticos?.edentulo && <Check className="h-4 w-4" />}
-                  </button>
-
-                  {/* Macrodoncia */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDiagnosticoBool("macrodoncia")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      dienteSeleccionado.diagnosticos?.macrodoncia
-                        ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
-                        : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>Macrodoncia (MAC)</span>
-                    {dienteSeleccionado.diagnosticos?.macrodoncia && <Check className="h-4 w-4" />}
-                  </button>
-
-                  {/* Microdoncia */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDiagnosticoBool("microdoncia")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      dienteSeleccionado.diagnosticos?.microdoncia
-                        ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 text-blue-600"
-                        : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>Microdoncia (MIC)</span>
-                    {dienteSeleccionado.diagnosticos?.microdoncia && <Check className="h-4 w-4" />}
-                  </button>
-
-                  {/* Movilidad */}
-                  <button
-                    type="button"
-                    onClick={() => toggleDiagnosticoBool("movilidad")}
-                    className={`flex justify-between items-center p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      dienteSeleccionado.diagnosticos?.movilidad
-                        ? "bg-orange-50 dark:bg-orange-950/20 border-orange-500 text-orange-600"
-                        : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span>Movilidad (M1)</span>
-                    {dienteSeleccionado.diagnosticos?.movilidad && <Check className="h-4 w-4" />}
-                  </button>
-
+              {/* Variables de Diagnóstico Inicial (Reemplazadas por Barra de Búsqueda Dinámica) */}
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b pb-1.5 border-slate-100 dark:border-slate-800">
+                    Búsqueda de Estados / Diagnósticos
+                  </h4>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Escriba para buscar (ej: fractura, movilidad, endodoncia...)"
+                      value={diagnosticSearchQuery}
+                      onChange={(e) => setDiagnosticSearchQuery(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3.5 text-xs font-bold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10"
+                    />
+                    {diagnosticSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setDiagnosticSearchQuery("")}
+                        className="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Selectores Avanzados */}
-                <div className="space-y-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  
-                  {/* Giroversión */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
-                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Giroversión (Orientación)</div>
-                    <div className="flex gap-1 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("giroversion", dienteSeleccionado.diagnosticos?.giroversion === "izquierda" ? undefined : "izquierda")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.giroversion === "izquierda"
-                            ? "bg-sky-500 border-sky-600 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-655"
-                        }`}
-                      >
-                        Izquierda ↺
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("giroversion", dienteSeleccionado.diagnosticos?.giroversion === "derecha" ? undefined : "derecha")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.giroversion === "derecha"
-                            ? "bg-sky-500 border-sky-600 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-655"
-                        }`}
-                      >
-                        Derecha ↻
-                      </button>
-                    </div>
+                {/* Lista de Sugerencias Filtradas */}
+                {diagnosticSearchQuery.trim() !== "" && (
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800 rounded-xl max-h-48 overflow-y-auto divide-y divide-slate-100/80 dark:divide-slate-850 shadow-inner">
+                    {filteredDiagnosticOptions.length === 0 ? (
+                      <p className="p-3 text-xs text-slate-400 text-center font-bold">No se encontraron resultados.</p>
+                    ) : (
+                      filteredDiagnosticOptions.map((opt) => (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => {
+                            opt.action();
+                            setDiagnosticSearchQuery("");
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-teal-50 dark:hover:bg-emerald-950/20 hover:text-teal-600 dark:hover:text-emerald-450 transition-colors cursor-pointer"
+                        >
+                          + {opt.label}
+                        </button>
+                      ))
+                    )}
                   </div>
+                )}
 
-                  {/* Incrustación */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-855 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
-                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Incrustación (Buen/Mal estado)</div>
-                    <div className="flex gap-1 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("incrustacion", dienteSeleccionado.diagnosticos?.incrustacion === "bueno" ? undefined : "bueno")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.incrustacion === "bueno"
-                            ? "bg-blue-600 border-blue-700 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
-                        }`}
-                      >
-                        Buen Estado (IM Azul)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("incrustacion", dienteSeleccionado.diagnosticos?.incrustacion === "malo" ? undefined : "malo")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.incrustacion === "malo"
-                            ? "bg-red-500 border-red-655 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
-                        }`}
-                      >
-                        Mal Estado (IM Rojo)
-                      </button>
+                {/* Listado de Diagnósticos Activos como Chips/Badges */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Estados Activos en la Pieza</span>
+                  {dienteSeleccionado && getActiveDiagnostics(dienteSeleccionado).length === 0 ? (
+                    <p className="text-xs text-slate-400 font-semibold italic">Pieza sana (sin patologías registradas).</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {dienteSeleccionado && getActiveDiagnostics(dienteSeleccionado).map((act) => (
+                        <span
+                          key={act.id}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold shadow-sm transition-all ${act.color}`}
+                        >
+                          {act.label}
+                          <button
+                            type="button"
+                            onClick={act.onRemove}
+                            className="hover:scale-110 text-slate-400 hover:text-red-500 font-bold transition-transform cursor-pointer ml-0.5"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
                     </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
-                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Incrustación Estética (IE)</div>
-                    <div className="flex gap-1 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("incrustacion_estetica", dienteSeleccionado.diagnosticos?.incrustacion_estetica === "bueno" ? undefined : "bueno")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.incrustacion_estetica === "bueno"
-                            ? "bg-blue-600 border-blue-700 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
-                        }`}
-                      >
-                        Buen Estado (IE Azul)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("incrustacion_estetica", dienteSeleccionado.diagnosticos?.incrustacion_estetica === "malo" ? undefined : "malo")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.incrustacion_estetica === "malo"
-                            ? "bg-red-500 border-red-650 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
-                        }`}
-                      >
-                        Mal Estado (IE Rojo)
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-slate-50 dark:bg-slate-855 rounded-2xl border border-slate-150 dark:border-slate-800 gap-2">
-                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Endodoncia previa (Ingreso)</div>
-                    <div className="flex gap-1 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("endodoncia_inicial", dienteSeleccionado.diagnosticos?.endodoncia_inicial === "bueno" ? undefined : "bueno")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.endodoncia_inicial === "bueno"
-                            ? "bg-blue-600 border-blue-700 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
-                        }`}
-                      >
-                        Buena (Línea Azul)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDiagnosticoVal("endodoncia_inicial", dienteSeleccionado.diagnosticos?.endodoncia_inicial === "malo" ? undefined : "malo")}
-                        className={`px-3 py-1.5 text-[10px] font-extrabold uppercase rounded-lg border w-1/2 sm:w-auto cursor-pointer ${
-                          dienteSeleccionado.diagnosticos?.endodoncia_inicial === "malo"
-                            ? "bg-red-500 border-red-655 text-white"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 hover:text-slate-600"
-                        }`}
-                      >
-                        Mala (Línea Roja)
-                      </button>
-                    </div>
-                  </div>
-
+                  )}
                 </div>
 
-                {/* Limpiar pieza */}
-                <div className="pt-3 flex justify-between">
+                {/* Botón de Restaurar Pieza Sana (MANTENIDO) */}
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between">
                   <button
                     type="button"
                     onClick={resetearDiente}
@@ -794,9 +764,7 @@ export const Odontograma: React.FC<OdontogramaProps> = ({
                     Restaurar Pieza Sana
                   </button>
                 </div>
-
               </div>
-
             </div>
 
             {/* Footer */}

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
     direccion TEXT,
     ocupacion VARCHAR(100),
     fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    es_antiguo BOOLEAN DEFAULT false,
     
     -- Antecedentes Médicos (Historia Clínica Física - Foto 1)
     alergias TEXT,                  -- Alergias a medicamentos, alimentos, anestésicos, etc.
@@ -55,7 +56,9 @@ CREATE TABLE IF NOT EXISTS tratamientos_paciente (
     -- Resumen financiero (Ficha de Costos - Foto 2)
     total_costo NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (total_costo >= 0),
     adelanto NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (adelanto >= 0),
-    saldo NUMERIC(10, 2) GENERATED ALWAYS AS (total_costo - adelanto) STORED
+    saldo NUMERIC(10, 2) GENERATED ALWAYS AS (total_costo - adelanto) STORED,
+    estado VARCHAR(50) DEFAULT 'presupuesto_pendiente',
+    sesiones JSONB DEFAULT '[]'::jsonb
 );
 
 -- Indexar por paciente para cargar su historial clínico rápidamente
@@ -69,6 +72,8 @@ CREATE TABLE IF NOT EXISTS detalles_treatment (
     tratamiento_paciente_id UUID NOT NULL REFERENCES tratamientos_paciente(id) ON DELETE CASCADE,
     procedimiento_id UUID NOT NULL REFERENCES procedimientos_catalogo(id) ON DELETE RESTRICT,
     diente_numero INTEGER NULL CHECK ((diente_numero >= 11 AND diente_numero <= 48) OR (diente_numero >= 51 AND diente_numero <= 85)),
+    piezas VARCHAR(100) DEFAULT '',
+    cantidad INTEGER DEFAULT 1,
     notas TEXT,                     -- Indicaciones específicas para este procedimiento
     costo_final NUMERIC(10, 2) NOT NULL CHECK (costo_final >= 0)
 );

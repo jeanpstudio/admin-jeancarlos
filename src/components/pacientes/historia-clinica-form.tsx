@@ -15,6 +15,7 @@ export interface PacienteData {
   direccion: string;
   ocupacion: string;
   fecha_registro?: string;
+  es_antiguo?: boolean;
   alergias: string;
   hemorragias: string;
   enfermedades: string;
@@ -50,6 +51,7 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
     enfermedades: "",
     medicamentos_actuales: "",
     motivo_consulta: "",
+    es_antiguo: false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -210,6 +212,54 @@ export const HistoriaClinicaForm: React.FC<HistoriaClinicaFormProps> = ({
               <MapPin className="absolute right-3.5 top-3.5 h-4 w-4 text-slate-400" />
             </div>
           </div>
+
+          {/* Registro de Paciente Antiguo / Histórico */}
+          <div className="md:col-span-3 p-4 bg-teal-500/5 dark:bg-emerald-950/10 rounded-2xl border border-teal-500/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-450" />
+                ¿Es Paciente Antiguo?
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Habilite esta opción para ingresar una fecha de registro histórica (pasada) y permitir guardar tratamientos y sesiones con fechas históricas.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                name="es_antiguo"
+                checked={formData.es_antiguo || false}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setFormData((prev) => ({
+                    ...prev,
+                    es_antiguo: val,
+                    fecha_registro: val ? (prev.fecha_registro || new Date().toISOString().substring(0, 10)) : undefined
+                  }));
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          {/* Fecha de Registro Histórica (Sólo si es_antiguo es true) */}
+          {formData.es_antiguo && (
+            <div className="space-y-2 transition-all duration-300 md:col-span-2">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha de Registro Histórica *</label>
+              <input
+                type="date"
+                name="fecha_registro"
+                value={formData.fecha_registro ? formData.fecha_registro.substring(0, 10) : ""}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, fecha_registro: e.target.value }));
+                }}
+                required
+                max={new Date().toISOString().substring(0, 10)}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-3 px-4 text-sm font-semibold text-slate-800 dark:text-slate-150 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/10 transition-all"
+              />
+            </div>
+          )}
         </div>
       </div>
 

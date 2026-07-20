@@ -73,3 +73,30 @@ Este archivo contiene el historial de cambios y avances realizados en el proyect
 *   **Limpieza de Selección en Proformas:** Se modificó la selección de procedimientos en el calculador de proformas ([presupuesto-calculador.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/tratamientos/presupuesto-calculador.tsx)) para que, si el odontólogo cambia de procedimiento en el dropdown select, se limpien automáticamente las piezas dentales seleccionadas activamente, previniendo errores involuntarios al estructurar presupuestos compuestos.
 
 
+## Avances del Día (20/07/2026)
+
+### 1. Optimizaciones del Odontograma y Diseño Clínico
+*   **Eliminación de la Leyenda:** Se removió la barra de "Leyenda de Estados Clave" de [odontograma.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/odontograma/odontograma.tsx) para limpiar y maximizar el área de visualización.
+*   **Arcadas de Niño al Centro:** Se reordenaron las arcadas dentales de manera que la dentición temporal (infantil) quede posicionada en las filas centrales (Filas 2 y 3) y la permanente (adulto) en las exteriores (Filas 1 y 4), mejorando la lógica visual y simetría anatómica.
+*   **Unificación y Alineación de Corona-Raíz:** En [diente-svg.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/odontograma/diente-svg.tsx), se alinearon la cruz interactiva (caras de la corona) siempre arriba y el gráfico anatómico (diente/raíz) abajo. Para los dientes superiores, se aplicó un flip vertical (`scale-y-[-1]`) logrando que todas las coronas del odontograma queden arriba (pegadas a la cruz de caras) y las raíces apunten hacia abajo uniformemente.
+*   **Siglas y Letras más Grandes:** Se agrandó el tamaño de letra de las mini-etiquetas e iniciales de diagnósticos y procedimientos ubicadas debajo del diente a `text-[10px]` para mejorar la legibilidad.
+
+### 2. Buscador Dinámico de Diagnósticos y Procedimientos
+*   **Buscador en Estado Inicial:** Se reemplazó la rejilla estática de botones dentro del modal de pieza por un buscador dinámico que filtra patologías en tiempo real. Los diagnósticos aplicados se muestran abajo en forma de tags con botón de eliminación individual `✕`, manteniendo en la base el botón para **Restaurar Pieza Sana**.
+*   **Buscador en Calculadora de Presupuestos:** Se reemplazó el select clásico de procedimientos en [presupuesto-calculador.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/components/tratamientos/presupuesto-calculador.tsx) por una entrada de autocompletado dinámica reactiva.
+*   **Teclado Dinámico de Piezas:** Se actualizó la lógica de parseo en el campo de piezas para que el odontólogo pueda teclear directamente números separados por comas, espacios o punto y coma de forma libre.
+
+### 3. Lógica Financiera de Presupuestos
+*   **Precios Manuales:** Se eliminaron las referencias a precios base preestablecidos en el catálogo. Ahora, cada selección inicia en `0.00` y el odontólogo digita manualmente el costo unitario por cada tratamiento.
+*   **Aceptación Automática:** Se configuró el sistema en [page.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/app/page.tsx) para que, si un presupuesto se guarda con un adelanto mayor a `0` (`adelanto > 0`), este sea guardado automáticamente con el estado de `presupuesto_aceptado` (Aceptado).
+
+### 4. Soporte Histórico para Pacientes Antiguos
+*   **Toggle de Paciente Antiguo:** Se integró un control switch en el registro del paciente para marcarlo como antiguo. Al activarse, permite ingresar una fecha de registro histórica (pasada).
+*   **Fechas Históricas Generales:** Si el paciente es antiguo, se habilita la asignación de fechas pasadas tanto para presupuestos de tratamientos en la calculadora como para la adición de sesiones clínicas en el historial.
+
+### 5. Finalización de Lógica de Persistencia, Fechas Pasadas y Auto-Aceptación
+*   **Fechas Históricas Guardadas:** Se completó la lógica de persistencia en [page.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/app/page.tsx) para recibir y guardar la fecha histórica en la ficha del paciente (en fallbacks offline), el presupuesto (tratamientos) y los logs de sesiones de evolución clínica si el paciente está configurado como antiguo.
+*   **Auto-Aceptación de Presupuestos Activa:** Se integró la lógica en [page.tsx](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/src/app/page.tsx) para guardar de forma automatizada en estado "Aceptado" todo presupuesto que registre un pago/adelanto inicial mayor a `0` (`adelanto > 0`), agilizando el flujo de trabajo.
+*   **Alineación de Base de Datos:** Se actualizó [schema.sql](file:///Users/jeanpstudio/Desktop/Apps/admin-jeancarlos/supabase/schema.sql) para reflejar los campos reales utilizados por el dashboard de pacientes y presupuestos.
+
+
