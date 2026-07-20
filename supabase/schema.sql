@@ -102,3 +102,17 @@ INSERT INTO procedimientos_catalogo (nombre_procedimiento, costo_base) VALUES
 ('Ortodoncia (Instalación Brackets)', 1500.00)
 ON CONFLICT (nombre_procedimiento) DO UPDATE 
 SET costo_base = EXCLUDED.costo_base;
+
+
+-- 5. TABLA: SALDOS_INDEPENDIENTES
+-- Registro independiente de saldos o cobros pendientes del paciente
+CREATE TABLE IF NOT EXISTS saldos_independientes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paciente_id UUID NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+    fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    procedimiento VARCHAR(255) NOT NULL,
+    saldo NUMERIC(10, 2) NOT NULL DEFAULT 0.00 CHECK (saldo >= 0)
+);
+
+-- Indexar por paciente para cargar rápidamente
+CREATE INDEX IF NOT EXISTS idx_saldos_independientes_paciente ON saldos_independientes(paciente_id);
